@@ -128,3 +128,14 @@ if structure:
     st.session_state['kspacing']=kspacing
 
     st.session_state['all_info']=True
+    
+    st.info('Next choose how to generate an input file:')
+    col3, col4 = st.columns(2)
+
+    with col3:
+        if st.button("Chatbot generator"):
+            st.switch_page("pages/Chatbot_generator.py")
+
+    with col4:
+        if st.button("Deterministic generator"):
+            st.switch_page("pages/Deterministic_generator.py")
