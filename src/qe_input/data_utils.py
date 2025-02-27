@@ -1,9 +1,5 @@
-import os
-import shutil
-import re
 import json
 import pandas as pd
-import numpy as np
 from pymatgen.core.composition import Composition
 from pymatgen.core.structure import Structure
 from mp_api.client import MPRester
