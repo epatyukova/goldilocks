@@ -1,0 +1,39 @@
+[tool.poetry]
+name = "goldilocks"
+version = "0.0.0"
+description = "This webapp helps to generate input files for SCF single-point calculations with Quantum Espresso"
+authors = ["Elena Patyukova <elena.patyukova@stfc.ac.uk>"]
+license = "MIT"
+readme = "README.md"
+packages = [{ include = "qe_input", from = "src" }]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.13"
+streamlit = ">=1.45.0,<2.0.0"
+openai = ">=1.78.0,<2.0.0"
+groq = ">=0.24.0,<0.25.0"
+langchain-core = ">=0.3.59,<0.4.0"
+langchain-openai = ">=0.3.16,<0.4.0"
+langgraph = ">=0.4.3,<0.5.0"
+torch = ">=2.7.0,<3.0.0"
+pymatgen = "==2024.11.13"
+ase = ">=3.25.0,<4.0.0"
+crystal-toolkit = ">=2024.10.22,<2025.0.0"
+pydantic = "==2.10.3"
+pytest = ">=8.3.5,<9.0.0"
+python-dotenv = ">=1.1.0,<2.0.0"
+ruff = ">=0.11.9,<0.12.0"
+jarvis-tools = ">=2024.10.30,<2025.0.0"
+mp-api = "==0.40.0"
+requests = ">=2.32.3,<3.0.0"
+bs4 = ">=0.0.2,<0.0.3"
+scipy = ">=1.15.3,<2.0.0"
+google-generativeai = ">=0.8.5,<0.9.0"
+
+[tool.poetry.urls]
+Homepage = "https://gtgjedbxhfzmx6jhyyyefg.streamlit.app/"
+Repository = "https://github.com/stfc/goldilocks.git"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
