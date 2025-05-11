@@ -13,4 +13,5 @@ pg = st.navigation(
             "About the app": [readme]
         }
     )
+
 pg.run()
