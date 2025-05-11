@@ -2,6 +2,8 @@
 tests/*.ipynb
 src/qe_input/cgcnn/cgcnn_data/0.cif
 src/qe_input/temp/
+src/qe_input/qe_input.zip
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
