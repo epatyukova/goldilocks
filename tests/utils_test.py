@@ -58,8 +58,8 @@ def test_generate_input_file(tmp_path):
     mock_file = tmp_path / 'mock_structure.cif'
     mock_file.write_text(CIF, encoding="utf-8")
     pseudo_path = tmp_path / 'pseudos'
-    pseudo_Co = pseudo_path / 'Co.upf'
-    pseudo_F = pseudo_path / 'F.upf'
+    # pseudo_Co = pseudo_path / 'Co.upf'
+    # pseudo_F = pseudo_path / 'F.upf'
     dict_pseudo_file_names = {'Co':'Co.upf','F':'F.upf'}
     max_ecutwfc = 30
     max_ecutrho = 240
