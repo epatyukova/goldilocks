@@ -34,7 +34,7 @@ jobs:
       run: poetry install --no-interaction
     
     - name: Run Ruff linter
-      run: poetry run ruff .
+      run: poetry run ruff check .
       # Remove --exit-zero if you want lint failures to fail the build
     
     - name: Run tests
