@@ -3,8 +3,6 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/qe_input')))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/qe_input/pages')))
 
-from streamlit.testing.v1 import AppTest
-import streamlit as st
 
 from dotenv import load_dotenv
 

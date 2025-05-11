@@ -1,6 +1,5 @@
 import os
 import sys
-from pymatgen.core.structure import Structure
 from dotenv import load_dotenv
 import pytest
 

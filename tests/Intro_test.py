@@ -3,12 +3,9 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/qe_input')))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/qe_input/pages')))
 
-from streamlit.testing.v1 import AppTest
 import pytest
-import json
 
 from dotenv import load_dotenv
-from pymatgen.core.structure import Structure
 
 
 load_dotenv()

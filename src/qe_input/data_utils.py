@@ -1,9 +1,5 @@
-import os
-import shutil
-import re
 import json
 import pandas as pd
-import numpy as np
 from pymatgen.core.composition import Composition
 from pymatgen.core.structure import Structure
 from mp_api.client import MPRester
@@ -210,7 +206,7 @@ class StructureLookup:
             hide_index=True,
         )
 
-        selected = selected_row[selected_row["select"] == True]
+        selected = selected_row[selected_row["select"]]
         if len(selected) == 1:
             struct_id = selected["id"].values[0]
             structure = id_lookup_func(struct_id)
