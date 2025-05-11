@@ -1,6 +1,6 @@
 .streamlit/secrets.toml
 tests/*.ipynb
-src/qe_input/cgcnn/cgcnn_data/
+src/qe_input/cgcnn/cgcnn_data/0.cif
 src/qe_input/temp/
 
 # Byte-compiled / optimized / DLL files
