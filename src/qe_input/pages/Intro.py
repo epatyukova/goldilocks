@@ -5,70 +5,39 @@ from pymatgen.core.structure import Structure
 from pymatgen.core.composition import Composition
 from pymatgen.io.cif import CifWriter
 from utils import list_of_pseudos, cutoff_limits
-from data_utils import jarvis_structure_lookup, mp_structure_lookup, mc3d_structure_lookup, oqmd_strucutre_lookup
+from data_utils import StructureLookup  # your class here
 from kspacing_model import predict_kspacing
 
 @st.fragment
 def next_step():
     st.info('Next choose how to generate an input file:')
     col3, col4 = st.columns(2)
-
     with col3:
         if st.button("Chatbot generator"):
             st.switch_page("pages/Chatbot_generator.py")
-
     with col4:
         if st.button("Deterministic generator"):
             st.switch_page("pages/Deterministic_generator.py")
 
 st.write("# Welcome to QE input generator! 👋")
-
-st.markdown("""This app will help you generate input files for Quantum Espresso calculations.""")
-
+st.markdown("This app will help you generate input files for Quantum Espresso calculations.")
 st.sidebar.success("Provide specifications and select a way to generate input")
 
-st.session_state['all_info']=False
-structure=None
+st.session_state['all_info'] = False
+structure = None
 
-col1, col2 =st.columns(2)
-
+col1, col2 = st.columns(2)
 with col1:
-    functional_value = st.selectbox('XC-functional', 
-                                ('PBE','PBEsol'), 
-                                index=None, 
-                                placeholder='PBE')
-    
-    mode_value = st.selectbox('pseudopotential flavour', 
-                            ('efficiency','precision'), 
-                            index=None, 
-                            placeholder='efficiency')
-    
+    functional_value = st.selectbox('XC-functional', ('PBE', 'PBEsol'), index=None, placeholder='PBE')
+    mode_value = st.selectbox('pseudopotential flavour', ('efficiency', 'precision'), index=None, placeholder='efficiency')
 with col2:
-    kspacing_model = st.selectbox('ML model to predict kspacing', 
-                            ('CGCNN'), 
-                            index=None, 
-                            placeholder='CGCNN')
-    
+    kspacing_model = st.selectbox('ML model to predict kspacing', ('CGCNN',), index=None, placeholder='CGCNN')
 
-if functional_value:
-    st.session_state['functional'] = functional_value
-else:
-    st.session_state['functional'] = 'PBE'
+st.session_state['functional'] = functional_value or 'PBE'
+st.session_state['mode'] = mode_value or 'efficiency'
+st.session_state['kspacing_model'] = kspacing_model or 'CGCNN'
 
-if mode_value:
-    st.session_state['mode'] = mode_value
-else:
-    st.session_state['mode'] = 'efficiency'
-
-if kspacing_model:
-    st.session_state['kspacing_model'] = kspacing_model
-else:
-    st.session_state['kspacing_model'] = 'CGCNN'
-
-
-# upload structure file into buffer
 tab1, tab2 = st.tabs(["Upload structure", "Search for structure"])
-
 with tab1:
     structure_file = st.file_uploader("Upload the structure file", type=("cif"))
 
@@ -77,84 +46,55 @@ with tab2:
 
 if not structure_file and not input_formula:
     st.info("Please add your structure file or chemical formula to continue")
+
 elif input_formula:
-    composition=Composition(input_formula)
-    formula,_=composition.get_reduced_formula_and_factor()
-    # may also include alexandria https://alexandria.icams.rub.de/
-    structure_database = st.radio(label='Choose the database to search for the structure',
-                                  options=['Jarvis','MP', 'MC3D', 'OQMD'],
-                                  horizontal=True,
-                                  )
-    if structure_database=='Jarvis':
+    composition = Composition(input_formula)
+    formula, _ = composition.get_reduced_formula_and_factor()
+
+    structure_database = st.radio('Choose the database to search for the structure',
+                                  options=['Jarvis', 'MP', 'MC3D', 'OQMD'],
+                                  horizontal=True)
+    
+    if structure_database == 'Jarvis':
+        lookup = StructureLookup() 
         try:
-            result=jarvis_structure_lookup(formula,id=False)
-            selected_row=st.data_editor(
-                            result,
-                            column_config={
-                                "select": st.column_config.CheckboxColumn(
-                                    "Which structure?",
-                                    help="Select your structure",
-                                    default=False,
-                                )
-                            },
-                            disabled=["formula",'energy','sg','natoms','abc','angles'],
-                            hide_index=True,
-                        )
-            if(len(selected_row.loc[selected_row['select']==True])==1):
-                x=selected_row.loc[selected_row['select']==True]['id'].values[0]
-            elif(len(selected_row.loc[selected_row['select']==True])==0):
-                st.info('Choose the structure!')
-            else:
-                st.info('You need to choose one structure!')
-            if x is not None:
-                structure=jarvis_structure_lookup(formula,id=x)
-                unit_cell = st.selectbox('Transform unit cell', 
-                            ('leave as is','niggli reduced cell', 'primitive','supercell'), 
-                            index=None, 
-                            placeholder='leave as is')
-                if(unit_cell=='niggli reduced cell'):
-                    structure=structure.get_reduced_structure()
-                elif(unit_cell=='primitive'):
-                    structure=structure.get_primitive_structure()
-                elif(unit_cell=='supercell'):
-                    multi=st.text_input(label='multiplication factor in the format (na,nb,nc)',
-                                        placeholder='(2,2,2)')
-                    multi=tuple(multi[1:-1].split(','))
-                    structure.make_supercell(multi)
-                    st.info('Supercell is created')
-
+            result = lookup.get_jarvis_table(formula)
+            structure = lookup.select_structure_from_table(result, lookup.get_jarvis_structure_by_id)
         except Exception as exc:
-            st.info('Structure was not found!')
-            st.info(exc)
-
-    elif structure_database=='MP':
-        mp_api_key = st.text_input("Materials Project API Key ([Get a MP API key](https://next-gen.materialsproject.org/api#api-key))", key="mp_api_key", type="password")
+            st.error(f'Error: {exc}')
+    
+    elif structure_database == 'MP':
+        mp_api_key = st.text_input("Materials Project API Key", key="mp_api_key", type="password")
         if mp_api_key:
+            lookup = StructureLookup(mp_api_key)
             try:
-                structure=mp_structure_lookup(formula,mp_api_key)
-                st.info('Structure was found in Materials Project database')
-            except:
-                st.info('Structure was not found!')
-    elif structure_database=='MC3D':
+                result = lookup.get_mp_structure_table(formula)
+                structure = lookup.select_structure_from_table(result, lookup.get_mp_structure_by_id)
+            except Exception as exc:
+                st.error(f"Error: {exc}")
+
+    elif structure_database == 'MC3D':
+        lookup = StructureLookup() 
         try:
-            structure=mc3d_structure_lookup(formula)
-            st.info('Structure was found in MC3D dataset')
+            result = lookup.get_mc3d_structure_table(formula)
+            structure = lookup.select_structure_from_table(result, lookup.get_mc3d_structure_by_id)
         except Exception as exc:
-            st.info('Structure was not found!')
-            st.info(exc)
-    elif structure_database=='OQMD':
+            st.error(f'Error: {exc}')
+
+    elif structure_database == 'OQMD':
+        lookup = StructureLookup() 
         try:
-            structure=oqmd_strucutre_lookup(formula)
-            st.info('Structure was found in OQMD database')
+            result = lookup.get_oqmd_structure_table(formula)
+            structure = lookup.select_structure_from_table(result, lookup.get_oqmd_structure_by_id)
         except Exception as exc:
-            st.info('Structure was not found!')
-            st.info(exc)
+            st.error(f'Error: {exc}')
+
 elif structure_file:
-    save_directory = "./src/qe_input/temp/"
-    if os.path.exists(save_directory):
-        shutil.rmtree(save_directory, ignore_errors=True)
-    os.makedirs(save_directory)
-    file_path = os.path.join(save_directory, 'structure.cif')
+    temp_dir = "./src/qe_input/temp/"
+    if os.path.exists(temp_dir):
+        shutil.rmtree(temp_dir)
+    os.makedirs(temp_dir)
+    file_path = os.path.join(temp_dir, 'structure.cif')
     with open(file_path, "wb") as f:
         f.write(structure_file.getbuffer())
     structure = Structure.from_file(file_path)
@@ -194,3 +134,4 @@ if structure:
     st.session_state['all_info']=True
     
     next_step()
+

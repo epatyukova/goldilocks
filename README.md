@@ -39,7 +39,7 @@ or provide user-requested changes to parameters.
 2. Run the app
 
    ```
-   $ streamlit run src/qe_input/QE_input_generation_app.py
+   $ streamlit run src/qe_input/QE_input.py
    ```
 
 **References**

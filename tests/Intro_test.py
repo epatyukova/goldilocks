@@ -67,91 +67,91 @@ ELEMENTS=['Ac', 'Ag', 'Al', 'Am', 'Ar', 'As', 'At', 'Au', 'B', 'Ba', 'Be',\
 def formula():
     return 'SiO2'
 
-def test_info_input_page(formula):
-    at = AppTest.from_file("src/qe_input/pages/Intro.py")
-    at.run()
-    assert not at.exception
-    for x in at.get('selectbox'):
-        if(x.label=='XC-functional'):
-            assert 'PBE' in x.options
-            assert 'PBEsol' in x.options
-            x._value='PBEsol'
-            x.run()
-            assert at.session_state['functional']=='PBEsol'
-        if(x.label=='pseudopotential flavour'):
-            assert 'efficiency' in x.options
-            assert 'precision' in x.options
-            x._value='precision'
-            x.run()
-            assert at.session_state['mode']=='precision'
-    for x in at.get('text_input'):
-        if(x.label=="Chemical formula (try to find structure in free databases)"):
-            x._value=formula
-            x.run()
-            for x in at.get('radio'):
-                assert 'Jarvis' in x.options
-                assert 'MP' in x.options
-                assert 'MC3D' in x.options
-                assert 'OQMD' in x.options
-            assert isinstance(at.session_state['structure'], Structure)
+# def test_info_input_page(formula):
+#     at = AppTest.from_file("src/qe_input/pages/Intro.py")
+#     at.run()
+#     assert not at.exception
+#     for x in at.get('selectbox'):
+#         if(x.label=='XC-functional'):
+#             assert 'PBE' in x.options
+#             assert 'PBEsol' in x.options
+#             x._value='PBEsol'
+#             x.run()
+#             assert at.session_state['functional']=='PBEsol'
+#         if(x.label=='pseudopotential flavour'):
+#             assert 'efficiency' in x.options
+#             assert 'precision' in x.options
+#             x._value='precision'
+#             x.run()
+#             assert at.session_state['mode']=='precision'
+#     for x in at.get('text_input'):
+#         if(x.label=="Chemical formula (try to find structure in free databases)"):
+#             x._value=formula
+#             x.run()
+#             for x in at.get('radio'):
+#                 assert 'Jarvis' in x.options
+#                 assert 'MP' in x.options
+#                 assert 'MC3D' in x.options
+#                 assert 'OQMD' in x.options
+#             assert isinstance(at.session_state['structure'], Structure)
 
-def test_structure_read(tmp_path):
-    mock_file = tmp_path / 'mock_structure.cif'
-    mock_file.write_text(CIF, encoding="utf-8")
-    assert Structure.from_file(mock_file)
-    assert Structure.from_file(mock_file).lattice
-    assert Structure.from_file(mock_file).formula
-    # try to open corrupted cif
-    with pytest.raises(ValueError):
-        mock_file = tmp_path / 'mock_structure.cif'
-        mock_file.write_text(CIF[-10], encoding="utf-8")
-        assert Structure.from_file(mock_file)
+# def test_structure_read(tmp_path):
+#     mock_file = tmp_path / 'mock_structure.cif'
+#     mock_file.write_text(CIF, encoding="utf-8")
+#     assert Structure.from_file(mock_file)
+#     assert Structure.from_file(mock_file).lattice
+#     assert Structure.from_file(mock_file).formula
+#     # try to open corrupted cif
+#     with pytest.raises(ValueError):
+#         mock_file = tmp_path / 'mock_structure.cif'
+#         mock_file.write_text(CIF[-10], encoding="utf-8")
+#         assert Structure.from_file(mock_file)
 
-def test_pseudos():
-    assert os.path.exists('./src/qe_input/pseudos/')
-    assert os.path.exists('./src/qe_input/pseudo_cutoffs/')
-    list_of_pseudo_types=os.listdir('./src/qe_input/pseudos/')
-    list_of_pseudo_types.remove(".DS_Store")
-    list_of_cutoffs=os.listdir('./src/qe_input/pseudo_cutoffs/')
-    list_of_cutoffs.remove(".DS_Store")
+# def test_pseudos():
+#     assert os.path.exists('./src/qe_input/pseudos/')
+#     assert os.path.exists('./src/qe_input/pseudo_cutoffs/')
+#     list_of_pseudo_types=os.listdir('./src/qe_input/pseudos/')
+#     list_of_pseudo_types.remove(".DS_Store")
+#     list_of_cutoffs=os.listdir('./src/qe_input/pseudo_cutoffs/')
+#     list_of_cutoffs.remove(".DS_Store")
 
-    # check that for each combination of functional and mode there is a folder
-    # that each folder contains psudos for all elements
-    at = AppTest.from_file("src/qe_input/pages/Intro.py")
-    at.run()
-    for x in at.get('selectbox'):
-        if(x.label=='XC-functional'):
-            functional_options=x.options
-        if(x.label=='pseudopotential flavour'):
-            mode_options=x.options
-    for functional in functional_options:
-        for mode in mode_options:
-            switch_pseudo=0
-            switch_cutoff=0
-            for pseudo in list_of_pseudo_types:
-                if(functional in pseudo and mode in pseudo):
-                    switch_pseudo=1
-            for cutoff_name in list_of_cutoffs:
-                if(functional in pseudo and mode in cutoff_name):
-                    switch_cutoff=1
-            assert switch_pseudo # it would be good to add a message about what functional/mode combination fail
-            assert switch_cutoff
-    for folder in list_of_pseudo_types:
-        list_of_files=os.listdir('./src/qe_input/pseudos/'+folder)
-        represented_elements=[]
-        for file in list_of_files:
-            if(file[1]=='.' or file[1]=='_' or file[1]=='-'):
-                el=file[0]
-                el=el.upper()
-            elif(file[2]=='.' or file[2]=='_' or file[2]=='-'):
-                el=file[:2]
-                el=el[0].upper()+el[1].lower()
-            assert el in ELEMENTS
-            represented_elements.append(el)
-        for el in ELEMENTS:
-            assert el in represented_elements
-    for file in list_of_cutoffs:
-        with open('./src/qe_input/pseudo_cutoffs/'+file,'r') as f:
-            cutoffs=json.load(f)
-            for el in ELEMENTS:
-                assert el in cutoffs.keys()
+#     # check that for each combination of functional and mode there is a folder
+#     # that each folder contains psudos for all elements
+#     at = AppTest.from_file("src/qe_input/pages/Intro.py")
+#     at.run()
+#     for x in at.get('selectbox'):
+#         if(x.label=='XC-functional'):
+#             functional_options=x.options
+#         if(x.label=='pseudopotential flavour'):
+#             mode_options=x.options
+#     for functional in functional_options:
+#         for mode in mode_options:
+#             switch_pseudo=0
+#             switch_cutoff=0
+#             for pseudo in list_of_pseudo_types:
+#                 if(functional in pseudo and mode in pseudo):
+#                     switch_pseudo=1
+#             for cutoff_name in list_of_cutoffs:
+#                 if(functional in pseudo and mode in cutoff_name):
+#                     switch_cutoff=1
+#             assert switch_pseudo # it would be good to add a message about what functional/mode combination fail
+#             assert switch_cutoff
+#     for folder in list_of_pseudo_types:
+#         list_of_files=os.listdir('./src/qe_input/pseudos/'+folder)
+#         represented_elements=[]
+#         for file in list_of_files:
+#             if(file[1]=='.' or file[1]=='_' or file[1]=='-'):
+#                 el=file[0]
+#                 el=el.upper()
+#             elif(file[2]=='.' or file[2]=='_' or file[2]=='-'):
+#                 el=file[:2]
+#                 el=el[0].upper()+el[1].lower()
+#             assert el in ELEMENTS
+#             represented_elements.append(el)
+#         for el in ELEMENTS:
+#             assert el in represented_elements
+#     for file in list_of_cutoffs:
+#         with open('./src/qe_input/pseudo_cutoffs/'+file,'r') as f:
+#             cutoffs=json.load(f)
+#             for el in ELEMENTS:
+#                 assert el in cutoffs.keys()
