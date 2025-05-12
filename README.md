@@ -4,13 +4,15 @@ A web application for generation input for Quantum Espresso single point SCF cal
 [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://goldilocks.streamlit.app/)
 
 ## Contents
-* Running the application:
-   * Web application
-   * Running locally
-* Features
-* Related research
-* License
-* Funding
+* [Running the application](#running-the-application)
+   * [Web application](#web-application)
+   * [Running locally](#running-locally)
+       * [Docker container](#docker-container)
+       * [Running in python environment](#running-in-python-environment)
+* [Features](#features)
+* [Related research](#related-research)
+* [License](#license)
+* [Funding](#funding)
 
 ## Running the application
 
