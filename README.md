@@ -60,7 +60,7 @@ poetry install
 ```
 * Run the application
 ```
-run streamlit run src/qe_input/QE_input.py
+streamlit run src/qe_input/QE_input.py
 ```
 * Open the browser and go to
 ```
