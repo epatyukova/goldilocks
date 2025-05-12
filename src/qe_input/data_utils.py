@@ -15,6 +15,8 @@ class StructureLookup:
 
     def get_jarvis_table(self, formula):
         df = pd.read_pickle('./src/qe_input/Jarvis.pkl')
+        comp=Composition(formula)
+        formula=comp.hill_formula
         da = df.loc[df['formula'] == formula].reset_index(drop=True)
 
         if da.empty:
@@ -34,7 +36,7 @@ class StructureLookup:
 
             rows.append({
                 'select': False,
-                'formula': structure.formula,
+                'formula': Composition(structure.formula).hill_formula,
                 'form_energy_per_atom': row['formation_energy_peratom'],
                 'sg': spacegroup,
                 'sg_jarvis': row['spg_symbol'],
@@ -75,7 +77,7 @@ class StructureLookup:
 
             rows.append({
                 "select": False,
-                "formula": structure.formula,
+                "formula": Composition(structure.formula).hill_formula,
                 "form_energy_per_atom": doc.formation_energy_per_atom,
                 "sg": spacegroup,
                 "sg_mp": doc.symmetry.symbol,  # Not available from MP
@@ -112,7 +114,7 @@ class StructureLookup:
 
             rows.append({
                 'select': False,
-                'formula': structure.formula,
+                "formula": Composition(structure.formula).hill_formula,
                 'form_energy_per_atom': '-',
                 'sg': spacegroup,
                 'sg_mc3d': row['spacegroup_int'],
@@ -160,7 +162,7 @@ class StructureLookup:
 
             rows.append({
                 'select': False,
-                'formula': structure.formula,
+                "formula": Composition(structure.formula).hill_formula,
                 'form_energy_per_atom': row['delta_e'],
                 'sg': spacegroup,
                 'sg_oqmd': row['spacegroup'],
