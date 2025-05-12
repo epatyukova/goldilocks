@@ -76,11 +76,11 @@ Current strategy of choice of parameters for single point SCF calulations is the
 
 * Use SSSP library of pseudo-potentials [3] (there are versions for PBE, PBEsol funcitonals and 'efficiency' and 'precision' calculations, all of which are availible through the app)
 * For cutoffs choose the maximum value for all elements in the compound from tables supplied with corresponding set of pseudopotentials
-* We use constant smearing for all calculations 0.2 Ry Marzari-Vanderbilt smearing
-* We predict k-point mesh with machine learning model which was trained on data generated for the set of strutures from MC3D database (additional relaxation was not perfomed). We also predict confidece interval for k-points prediction (95% confidence).
+* We use constant smearing for all calculations 0.01 Ry Marzari-Vanderbilt smearing
+* We predict k-point mesh with machine learning model (at the moment it is CGCNN) which was trained on data generated for the set of strutures from MC3D database [8] (additional relaxation was not perfomed). We also predict confidece interval for k-points prediction (95% confidence). 
             
 The input file can be generated via:
-* ASE deterministic function (after generation .zip archive is created with the structure file, PP files, and input file which can be used as QE input)
+* ASE deterministic function [4] (after generation .zip archive is created with the structure file, PP files, and input file which can be used as QE input)
 * With a set of LLMs (the choice is availible, the user should provide appropriate API key, which can be obtained through links shown in the app. Some LLMs require payment).
 * LLMs can also answer questions about the content of the input file, introduce corrections in the generated file, and answer general questions about DFT simulations with QE.
 
@@ -92,15 +92,15 @@ Choosing the right parameters is crucial for achieving accurate results while op
 
 However, choosing the right strategy of parameter choice is a non-trivial issue, as in general, the given level of accuracy in a property can be achieved with multiple sets of parameters, and the effects of different parameters are often interdependent. However, some strategies in parameter choice can be more beneficial than others due to the robustness toward small changes in their values or the structure.
 
-One of the most common approaches to a parameter choice in high-throughput calculations is fixing all those parameters at certain values for all compounds, usually at sufficiently large k-point densities and cutoffs.  In this situation, there is no control over errors, calculations often turn out to be overconverged, and electricity is overconsumed. However, if the parameters have sufficiently high values, at least the calculations are converged.
+One of the most common approaches to a parameter choice in high-throughput calculations is fixing all those parameters at certain values for all compounds, usually at sufficiently large k-point densities and cutoffs.  In this situation, there is no control over errors, calculations often turn out to be overconverged, and electricity is overconsumed. However, if the parameters have sufficiently high values, at least the calculations are converged [6].
 
-Another common approach is related to an attempt to separate all the contributions of different parameters, analyse them separately, and give recommendations for the choice of the these parameters, based on performance on some pre-defined benchmark. The SSSP library of pseudopotentials follows this approach . Extensive analysis of the performance of pseudopotentials allowed to derive recommendations concerning pseudopotentials and the cutoff values. This analysis was performed for properties of elemental crystals with k-point grids 20×20×20 + MV smearing 0.002Ry, 10×10×10 + MV smearing 0.02Ry, or 6×6×6 + MV smearing 0.02Ry, depending on the property and type of material. The result of this work is a recommendation of PP for each atom, and energy + density cutoff tables.  Although the benchmark contains only elemental crystals, the same recommendations are expected to be extrapolated to multielement compounds. Also, it is discussed that PP performance strongly depends on the task. So, having the fixed choice of PP based on the errors averaged across different tasks is an oversimplification. 
+Another common approach is related to an attempt to separate all the contributions of different parameters, analyse them separately, and give recommendations for the choice of the these parameters, based on performance on some pre-defined benchmark. The SSSP library of pseudopotentials follows this approach [3]. Extensive analysis of the performance of pseudopotentials allowed to derive recommendations concerning pseudopotentials and the cutoff values. This analysis was performed for properties of elemental crystals with k-point grids 20×20×20 + MV smearing 0.002Ry, 10×10×10 + MV smearing 0.02Ry, or 6×6×6 + MV smearing 0.02Ry, depending on the property and type of material. The result of this work is a recommendation of PP for each atom, and energy + density cutoff tables.  Although the benchmark contains only elemental crystals, the same recommendations are expected to be extrapolated to multielement compounds. Also, it is discussed that PP performance strongly depends on the task. So, having the fixed choice of PP based on the errors averaged across different tasks is an oversimplification. 
 
-The same authors continue the pursuit of automatic parameter choice to suggest the values of k-point density and smearing temperature recently. At the end, they arrived at 3 sets of recommendations for 3 classes of compounds: isolators, metals, and compounds containing lanthanides.
+The same authors continue the pursuit of automatic parameter choice to suggest the values of k-point density and smearing temperature recently [10]. At the end, they arrived at 3 sets of recommendations for 3 classes of compounds: isolators, metals, and compounds containing lanthanides.
 
-In another recent paper  the convergence of equilibrium volume with respect to the values of cutoffs and k-point density for VASP package (and collection of pseudopotentials) was studied. They showed that the given accuracy is achieved at a set of values cutoff + k-points (curve resembling cutoff * kpoints = constant). They also quantified errors, showing (and explaining from physical perspective) that systematic errors due to cutoff and k-points are largely independent from each other.
+In another recent paper  the convergence of equilibrium volume with respect to the values of cutoffs and k-point density for VASP package (and collection of pseudopotentials) was studied [11]. They showed that the given accuracy is achieved at a set of values cutoff + k-points (curve resembling cutoff * kpoints = constant). They also quantified errors, showing (and explaining from physical perspective) that systematic errors due to cutoff and k-points are largely independent from each other.
 
-According to our knowledge there were no systematic studies of the influence of magnetism on convergence behavior, however in the SSSP paper  authors calculated the dependence of error on energy cutoff (for fixed duals, k-meshes, smearings) both for non-magnetic and magnetic cases for magnetic elemental crystal and found no significant differences in convergence trends. This suggests that DFT parameters can be chosen based on non-magnetic case.
+According to our knowledge there were no systematic studies of the influence of magnetism on convergence behavior, however in the SSSP paper [3] authors calculated the dependence of error on energy cutoff (for fixed duals, k-meshes, smearings) both for non-magnetic and magnetic cases for magnetic elemental crystal and found no significant differences in convergence trends. This suggests that DFT parameters can be chosen based on non-magnetic case.
 
 ## License
 MIT
@@ -163,3 +163,8 @@ MIT
 Materials Cloud Archive 2022.38 (2022), https://doi.org/10.24435/materialscloud:rw-t0
 
 [9] To provide reference and advise we suggest to use *OpenAI* models, see usage conditions https://openai.com/policies/row-terms-of-use/ 
+
+[10] *Accurate and efficient protocols for high-throughput first-principles materials simulations* Nascimento, G.M., Santos, F.J., Bercx, M., Grassano, D., Pizzi, G., Marzari, N., 
+https://doi.org/10.48550/arXiv.2504.03962
+
+[11] *Automated optimization of convergence parameters in plane wave density functional theory calculations via a tensor decomposition-based uncertainty quantification* Janssen, J., Makarov, E., Hickel, T., Shapeev, A.V., and Neugebauer, J., npj Comput Mater 10, 263 (2024). https://doi.org/10.1038/s41524-024-01388-2 .
