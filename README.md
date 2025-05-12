@@ -1,19 +1,71 @@
-# 💬 QE input generation
+# Goldilocks
+A web application for generation input for Quantum Espresso single point SCF calculations. The link to the application can be found below.
 
 [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://goldilocks.streamlit.app/)
 
-This application is a product of the STFC **Goldilocks** project. The purpose if this 
-app is to help unexperienced user to setup single point SCF energy calculation with 
-Quantum Espresso package [1,2] and SSSP library of pseudo-potentials [3]. 
-            
-DFT calculations contain numerical approximations that need to be
-converged according to the accuracy required for each study. Here to save compute time 
-(and by this make computations more sustainable) we predict these parameters with 
-ML models trained on a database of converged SCF calculations performed before [7,8]. 
-            
-To facilitate understanding of the content of the input file we provide an integration 
-of the LLMs [9] helping to answer users questions about the content of the input file, 
-or provide user-requested changes to parameters.
+## Contents
+* Running the application:
+   * Web application
+   * Running locally
+* Features
+* Related research
+* License
+* Funding
+
+## Running the application
+
+### Web application
+At the moment the applicaiton is deployed on Streamlit community cloud and can be tried out here https://goldilocks.streamlit.app/. In nearest future it will be transfered to https://goldilocks.ac.uk/.
+
+### Running locally
+The application can be run locally whether in a Docker container, or in python environment.
+
+#### Docker container
+* Make sure that Docker is installed
+* Clone the repository
+```
+git clone https://github.com/stfc/goldilocks.git
+cd goldilocks
+```
+* Build a docker image from the project folder
+```
+docker build -t goldilocks-app .
+```
+* Run the container
+```
+docker run -p 8501:8501 goldilocks-app
+```
+* Open the browser and go to
+```
+http://localhost:8501
+```
+#### Running in python environment
+* Install Python (>=3.10,<3.13)
+* Install Poetry
+* Create clean environment (here it is done with venv, but conda, etc. can also be used)
+```
+python -m venv .venv
+source .venv/bin/activate
+```
+* Clone the repository
+```
+git clone https://github.com/stfc/goldilocks.git
+cd goldilocks
+```
+* Install dependencies
+```
+poetry install
+```
+* Run the application
+```
+run streamlit run src/qe_input/QE_input.py
+```
+* Open the browser and go to
+```
+http://localhost:8501
+```
+
+## Features
 
 This application is a product of the STFC **Goldilocks** project. The purpose if this 
 app is to help unexperienced user to setup single point SCF energy calculation with 
@@ -28,19 +80,27 @@ To facilitate understanding of the content of the input file we provide an integ
 of the LLMs [9] helping to answer users questions about the content of the input file, 
 or provide user-requested changes to parameters.
 
-### How to run it on your own machine
+This application is a product of the STFC **Goldilocks** project. The purpose if this 
+app is to help unexperienced user to setup single point SCF energy calculation with 
+Quantum Espresso package [1,2] and SSSP library of pseudo-potentials [3]. 
+            
+DFT calculations contain numerical approximations that need to be
+converged according to the accuracy required for each study. Here to save compute time 
+(and by this make computations more sustainable) we predict these parameters with 
+ML models trained on a database of converged SCF calculations performed before [7,8]. 
+            
+To facilitate understanding of the content of the input file we provide an integration 
+of the LLMs [9] helping to answer users questions about the content of the input file, 
+or provide user-requested changes to parameters.
 
-1. Install the requirements
+## Related research
 
-   ```
-   $ pip install -r requirements.txt
-   ```
+## License
+MIT
+## Funding
+* EPSRC 
+* Ada Lovelace Center
 
-2. Run the app
-
-   ```
-   $ streamlit run src/qe_input/QE_input.py
-   ```
 
 **References**
 
