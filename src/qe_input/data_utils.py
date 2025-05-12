@@ -1,7 +1,7 @@
 import json
 import pandas as pd
-from pymatgen.core.composition import Composition
 from pymatgen.core.structure import Structure
+from pymatgen.core.composition import Composition
 from mp_api.client import MPRester
 from typing import Callable, Optional
 import streamlit as st

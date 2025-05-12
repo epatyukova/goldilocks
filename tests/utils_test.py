@@ -2,7 +2,6 @@ import sys
 import os
 import pytest
 from pymatgen.core.structure import Structure
-from pymatgen.core.composition import Composition
 import tempfile
 import json
 import math
@@ -113,24 +112,6 @@ def temp_pseudo_folders():
             'mock_pseudo_files': mock_pseudo_files
         }
 
-# test to check the generate_input_file function
-def test_generate_input_file(tmp_path):
-    mock_file = tmp_path / 'mock_structure.cif'
-    mock_file.write_text(CIF, encoding="utf-8")
-    pseudo_path = tmp_path / 'pseudos'
-    # pseudo_Co = pseudo_path / 'Co.upf'
-    # pseudo_F = pseudo_path / 'F.upf'
-    dict_pseudo_file_names = {'Co':'Co.upf','F':'F.upf'}
-    max_ecutwfc = 30
-    max_ecutrho = 240
-    kspacing = 10
-    
-    generated_file = generate_input_file(tmp_path, mock_file, pseudo_path, dict_pseudo_file_names, max_ecutwfc, max_ecutrho, kspacing)
-    filename = tmp_path / 'qe.in'
-
-    assert generated_file
-    assert os.path.isfile(filename)
-
 # test for list_of_pseudos function which creates a list of pseudo files for compound
 def test_list_of_pseudos(temp_pseudo_folders, sample_structure):
     """Test the list_of_pseudos function"""
@@ -206,6 +187,8 @@ def test_generate_input_file(temp_pseudo_folders, sample_structure):
         # Check input file was created
         qe_input_path = os.path.join(save_dir, 'qe.in')
         assert os.path.exists(qe_input_path)
+        assert input_content
+        assert len(input_content)>0
       
         ############## # #           #                  #           # # ###############               
         # in the future we can also check that qe.in has the right content and format #

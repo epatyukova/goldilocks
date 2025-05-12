@@ -2,12 +2,12 @@
 import os
 import pytest
 import pandas as pd
-import requests
-from unittest.mock import patch, MagicMock
+# import requests
+from unittest.mock import patch #, MagicMock
 from pymatgen.core.structure import Structure
-from pymatgen.core.composition import Composition
-from bs4 import BeautifulSoup
-import json
+# from pymatgen.core.composition import Composition
+# from bs4 import BeautifulSoup
+# import json
 import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/qe_input')))
