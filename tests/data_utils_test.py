@@ -4,13 +4,8 @@ import pytest
 import pandas as pd
 from unittest.mock import patch, MagicMock
 from pymatgen.core.structure import Structure
-# from pymatgen.core.composition import Composition
-# from bs4 import BeautifulSoup
-from typing import Dict
-import requests
 import json
 import sys
-import streamlit
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/qe_input')))
 from data_utils import StructureLookup
