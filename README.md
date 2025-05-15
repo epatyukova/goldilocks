@@ -17,10 +17,10 @@ A web application for generation input for Quantum Espresso single point SCF cal
 ## Running the application
 
 ### Web application
-At the moment the applicaiton is deployed on Streamlit community cloud and can be tried out here https://goldilocks.streamlit.app/. In nearest future it will be transfered to https://goldilocks.ac.uk/.
+At the moment the applicaiton is deployed on Streamlit community cloud and can be tried out here https://goldilocks.streamlit.app/. In the nearest future it will be transfered to https://goldilocks.ac.uk/.
 
 ### Running locally
-The application can be run locally whether in a Docker container, or in python environment.
+The application can be run locally whether in a Docker container, or in a python environment.
 
 #### Docker container
 * Make sure that Docker is installed
@@ -44,7 +44,7 @@ http://localhost:8501
 #### Running in python environment
 * Install Python (>=3.10,<3.13)
 * Install Poetry
-* Create clean environment (here it is done with venv, but conda, etc. can also be used)
+* Create a clean environment (here it is done with venv, but conda, etc. can also be used)
 ```
 python -m venv .venv
 source .venv/bin/activate
@@ -60,23 +60,23 @@ poetry install
 ```
 * Run the application
 ```
-run streamlit run src/qe_input/QE_input.py
+streamlit run src/qe_input/QE_input.py
 ```
-* Open the browser and go to
+* Open a browser and go to
 ```
 http://localhost:8501
 ```
 
 ## Features
 
-The purpose if this application is to help unexperienced user to setup single point SCF energy calculation with 
+The purpose if this application is to help unexperienced user to setup a single point SCF energy calculation with 
 Quantum Espresso package [1,2].
 
 Current strategy of choice of parameters for single point SCF calulations is the following:
 
-* Use SSSP library of pseudo-potentials [3] (there are versions for PBE, PBEsol funcitonals and 'efficiency' and 'precision' calculations, all of which are availible through the app)
+* Use SSSP library of pseudo-potentials [3] (there are versions for PBE, PBEsol funcitonals and 'efficiency' and 'precision' calculations, all of which are availible through the application)
 * For cutoffs choose the maximum value for all elements in the compound from tables supplied with corresponding set of pseudopotentials
-* We use constant smearing for all calculations 0.01 Ry Marzari-Vanderbilt smearing
+* We use constant smearing for all calculations 0.01 Ry Marzari-Vanderbilt
 * We predict k-point mesh with machine learning model (at the moment it is CGCNN) which was trained on data generated for the set of strutures from MC3D database [8] (additional relaxation was not perfomed). We also predict confidece interval for k-points prediction (95% confidence). 
             
 The input file can be generated via:
@@ -86,7 +86,7 @@ The input file can be generated via:
 
 ## Related research
 
-Performing high-throughput calculations requires the appropriate choice of calculation parameters. For Quantum Espresso single-point self-consistent field calculations, this includes selection of a suitable k-mesh, cutoff values for energy and density, suitable pseudo-potentials, a suitable smearing method, and the corresponding degauss value. In some cases, this also includes a suitable functional choice depending on the property that needs to be calculated and the system.
+Performing high-throughput calculations requires an appropriate choice of calculation parameters. For Quantum Espresso single-point self-consistent field energy calculations, this includes selection of a suitable k-mesh, cutoff values for energy and density, suitable pseudo-potentials, a suitable smearing method, and the corresponding degauss value. In some cases, this also includes a suitable functional choice depending on the property that needs to be calculated and the system.
 
 Choosing the right parameters is crucial for achieving accurate results while optimizing computational resources, as improper settings can lead to convergence issues or excessive computation times. Automating this process may help with energy efficiency, accuracy of the calculations, and lower the entry barrier to the field for users.
 

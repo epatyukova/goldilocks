@@ -1,7 +1,7 @@
 import json
 import pandas as pd
-from pymatgen.core.composition import Composition
 from pymatgen.core.structure import Structure
+from pymatgen.core.composition import Composition
 from mp_api.client import MPRester
 from typing import Callable, Optional
 import streamlit as st
@@ -15,6 +15,8 @@ class StructureLookup:
 
     def get_jarvis_table(self, formula):
         df = pd.read_pickle('./src/qe_input/Jarvis.pkl')
+        comp=Composition(formula)
+        formula=comp.hill_formula
         da = df.loc[df['formula'] == formula].reset_index(drop=True)
 
         if da.empty:
@@ -34,7 +36,7 @@ class StructureLookup:
 
             rows.append({
                 'select': False,
-                'formula': structure.formula,
+                'formula': Composition(structure.formula).hill_formula,
                 'form_energy_per_atom': row['formation_energy_peratom'],
                 'sg': spacegroup,
                 'sg_jarvis': row['spg_symbol'],
@@ -58,11 +60,15 @@ class StructureLookup:
                          species=atoms['elements'],
                          coords=atoms['coords'],
                          coords_are_cartesian=True)
+    
+    def mp_request(self,formula):
+        with MPRester(self.mp_api_key) as mpr:
+            docs = mpr.materials.summary.search(formula=formula)
+        return docs
 
     def get_mp_structure_table(self, formula):
 
-        with MPRester(self.mp_api_key) as mpr:
-            docs = mpr.materials.summary.search(formula=formula)
+        docs=self.mp_request(self,formula)
 
         if not docs:
             return pd.DataFrame()
@@ -70,12 +76,13 @@ class StructureLookup:
         rows = []
         for doc in docs:
             structure = doc.structure
-            spacegroup = structure.get_space_group_info(symprec=0.01, angle_tolerance=5.0)[0]
-            structure = structure.get_reduced_structure()
+            # spacegroup = structure.get_space_group_info(symprec=0.01, angle_tolerance=5.0)[0]
+            # structure = structure.get_reduced_structure()
+            spacegroup='P1'
 
             rows.append({
                 "select": False,
-                "formula": structure.formula,
+                "formula": Composition(structure.formula).hill_formula,
                 "form_energy_per_atom": doc.formation_energy_per_atom,
                 "sg": spacegroup,
                 "sg_mp": doc.symmetry.symbol,  # Not available from MP
@@ -89,10 +96,14 @@ class StructureLookup:
         result = result.sort_values(by='form_energy_per_atom').reset_index(drop=True)
         return result
     
-    def get_mp_structure_by_id(self, material_id):
+    def mp_request_id(self,material_id):
         with MPRester(self.mp_api_key) as mpr:
             doc = mpr.materials.summary.get_data_by_id(material_id)
-            return doc.structure if doc else None
+        return doc
+
+    def get_mp_structure_by_id(self, material_id):
+        doc = self.mp_request_id(material_id)
+        return doc.structure if doc else None
 
     def get_mc3d_structure_table(_self, formula):
         df = pd.read_json('./src/qe_input/mc3d_structures/mc3d_filtered_entries_pbe-v1_2025-01-16-01-09-20.json')
@@ -112,7 +123,7 @@ class StructureLookup:
 
             rows.append({
                 'select': False,
-                'formula': structure.formula,
+                "formula": Composition(structure.formula).hill_formula,
                 'form_energy_per_atom': '-',
                 'sg': spacegroup,
                 'sg_mc3d': row['spacegroup_int'],
@@ -160,7 +171,7 @@ class StructureLookup:
 
             rows.append({
                 'select': False,
-                'formula': structure.formula,
+                "formula": Composition(structure.formula).hill_formula,
                 'form_energy_per_atom': row['delta_e'],
                 'sg': spacegroup,
                 'sg_oqmd': row['spacegroup'],
@@ -184,12 +195,12 @@ class StructureLookup:
         
         species=[]
         coords=[]
-        for line in content['sites']:
+        for line in content['data'][0]['sites']:
             el, merged_coord = line.split(' @ ')
             species.append(el)
             x,y,z=merged_coord.split(' ')
             coords.append([float(x),float(y),float(z)])
-        structure=Structure(lattice=content['unit_cell'],species=species,coords=coords)
+        structure=Structure(lattice=content['data'][0]['unit_cell'],species=species,coords=coords)
         return structure
 
     def select_structure_from_table(self, result_df, id_lookup_func: Callable[[str], Structure]) -> Optional[Structure]:

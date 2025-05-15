@@ -1,8 +1,21 @@
 import sys
 import os
+import pytest
+from pymatgen.core.structure import Structure
+import tempfile
+import json
+import math
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/qe_input')))
 
-from utils import generate_input_file
+from utils import (
+    list_of_pseudos,
+    cutoff_limits,
+    generate_input_file,
+    update_input_file,
+    atomic_positions_list,
+    generate_kpoints_grid,
+    convert_openai_to_gemini
+    )
 
 CIF="""# generated using pymatgen
 data_CoF2
@@ -53,20 +66,190 @@ ELEMENTS=['Ac', 'Ag', 'Al', 'Am', 'Ar', 'As', 'At', 'Au', 'B', 'Ba', 'Be',\
        'Tb', 'Tc', 'Te', 'Th', 'Ti', 'Tl', 'Tm', 'U', 'V', 'W', 'Xe', 'Y',\
        'Yb', 'Zn', 'Zr']
 
-# test to check the generate_input_file function
-def test_generate_input_file(tmp_path):
-    mock_file = tmp_path / 'mock_structure.cif'
-    mock_file.write_text(CIF, encoding="utf-8")
-    pseudo_path = tmp_path / 'pseudos'
-    # pseudo_Co = pseudo_path / 'Co.upf'
-    # pseudo_F = pseudo_path / 'F.upf'
-    dict_pseudo_file_names = {'Co':'Co.upf','F':'F.upf'}
-    max_ecutwfc = 30
-    max_ecutrho = 240
-    kspacing = 10
-    
-    generated_file = generate_input_file(tmp_path, mock_file, pseudo_path, dict_pseudo_file_names, max_ecutwfc, max_ecutrho, kspacing)
-    filename = tmp_path / 'qe.in'
+@pytest.fixture
+def sample_structure():
+    """Create a sample structure for testing"""
+    # Create a simple SiO2 structure
+    lattice = [[5, 0, 0], [0, 5, 0], [0, 0, 5]]
+    species = ['Si', 'O', 'O']
+    coords = [[0, 0, 0], [0.5, 0.5, 0.5], [0.5, 0.5, 0]]
+    return Structure(lattice=lattice,species=species,coords=coords)
 
-    assert generated_file
-    assert os.path.isfile(filename)
+@pytest.fixture
+def temp_pseudo_folders():
+    """Create temporary folders for pseudopotentials and cutoffs"""
+    with tempfile.TemporaryDirectory() as pseudo_folder, \
+         tempfile.TemporaryDirectory() as cutoffs_folder, \
+         tempfile.TemporaryDirectory() as target_folder:
+        
+        # Create a mock pseudopotentials subfolder
+        pbe_efficiency_folder = os.path.join(pseudo_folder, 'pbe_efficiency/')
+        os.makedirs(pbe_efficiency_folder)
+        
+        # Create mock pseudo files
+        mock_pseudo_files = {
+            'Si': 'Si.pbe-efficiency.UPF',
+            'O': 'O.pbe-efficiency.UPF'
+        }
+        
+        for element, filename in mock_pseudo_files.items():
+            with open(os.path.join(pbe_efficiency_folder, filename), 'w') as f:
+                f.write('Dummy pseudo potential')
+        
+        # Create a mock cutoffs JSON file
+        cutoffs_data = {
+            'Si': {'cutoff_wfc': 40, 'cutoff_rho': 320},
+            'O': {'cutoff_wfc': 50, 'cutoff_rho': 400}
+        }
+        cutoffs_file = os.path.join(cutoffs_folder, 'pbe_efficiency_cutoffs.json')
+        with open(cutoffs_file, 'w') as f:
+            json.dump(cutoffs_data, f)
+        
+        yield {
+            'pseudo_folder': pseudo_folder,
+            'cutoffs_folder': cutoffs_folder,
+            'target_folder': target_folder,
+            'mock_pseudo_files': mock_pseudo_files
+        }
+
+# test for list_of_pseudos function which creates a list of pseudo files for compound
+def test_list_of_pseudos(temp_pseudo_folders, sample_structure):
+    """Test the list_of_pseudos function"""
+    pseudo_folder = temp_pseudo_folders['pseudo_folder']
+    target_folder = temp_pseudo_folders['target_folder']
+    mock_pseudo_files = temp_pseudo_folders['mock_pseudo_files']
+    
+    # Test successful pseudo file selection
+    chosen_subfolder, element_files = list_of_pseudos(
+        pseudo_potentials_folder=pseudo_folder+'/',
+        functional='PBE',
+        mode='efficiency', 
+        compound='SiO2',
+        target_folder=target_folder+'/'
+    )
+    
+    # Check if subfolder is correctly selected
+    assert chosen_subfolder == 'pbe_efficiency'
+    
+    # Check if correct pseudo files are selected
+    for element in ['Si', 'O']:
+        assert element in element_files
+        assert element_files[element] == mock_pseudo_files[element]
+
+    # Check if files are copied to target folder
+    for filename in mock_pseudo_files.values():
+        assert os.path.exists(os.path.join(target_folder, filename))
+
+
+def test_cutoff_limits(temp_pseudo_folders):
+    """Test the cutoff_limits function"""
+    cutoffs_folder = temp_pseudo_folders['cutoffs_folder']
+    
+    # Test for SiO2
+    limits = cutoff_limits(
+        pseudo_potentials_cutoffs_folder=cutoffs_folder+'/',
+        functional='PBE',
+        mode='efficiency',
+        compound='SiO2'
+    )
+    
+    # Check maximum cutoffs
+    assert limits['max_ecutwfc'] == 50  # Max of Si (40) and O (50)
+    assert limits['max_ecutrho'] == 400  # Max of Si (320) and O (400)
+
+
+def test_generate_input_file(temp_pseudo_folders, sample_structure):
+    """Test the generate_input_file function"""
+    with tempfile.TemporaryDirectory() as save_dir, \
+         tempfile.NamedTemporaryFile(suffix='.cif', delete=False) as structure_file:
+        
+        # Save the sample structure to a temporary file
+        sample_structure.to(filename=structure_file.name)
+        structure_file.close()
+        
+        # Prepare pseudo file mapping
+        pseudo_files = {
+            'Si': 'Si.pbe-efficiency.UPF',
+            'O': 'O.pbe-efficiency.UPF'
+        }
+        
+        # Generate input file
+        input_content = generate_input_file(
+            save_directory=save_dir,
+            structure_file=structure_file.name,
+            pseudo_path_temp=temp_pseudo_folders['pseudo_folder'],
+            dict_pseudo_file_names=pseudo_files,
+            max_ecutwfc=50,
+            max_ecutrho=400,
+            kspacing=0.2
+        )
+        
+        # Check input file was created
+        qe_input_path = os.path.join(save_dir, 'qe.in')
+        assert os.path.exists(qe_input_path)
+        assert input_content
+        assert len(input_content)>0
+      
+        ############## # #           #                  #           # # ###############               
+        # in the future we can also check that qe.in has the right content and format #
+        ############## # #           #                  #           # # ###############
+
+def test_update_input_file(temp_pseudo_folders):
+    """Test the update_input_file function"""
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+        temp_file.write('Original content')
+        temp_file.close()
+        
+        # Update the file
+        update_input_file(temp_file.name, 'New content')
+        
+        # Check file content
+        with open(temp_file.name, 'r') as f:
+            assert f.read() == 'New content'
+
+def test_atomic_positions_list(sample_structure):
+    """Test atomic_positions_list function"""
+    positions_str = atomic_positions_list(sample_structure)
+    
+    # Split into lines and check expected format
+    lines = positions_str.strip().split('\n')
+    assert len(lines) == 3  # 3 atoms in the structure
+    
+    # Basic format checking
+    for line in lines:
+        parts = line.split()
+        assert len(parts) == 4  # Element + 3 coordinates
+        assert parts[0] in ['Si', 'O']  # Correct elements
+
+def test_generate_kpoints_grid(sample_structure):
+    """Test generate_kpoints_grid function"""
+    kspacing = 0.2
+    kpoints = generate_kpoints_grid(sample_structure, kspacing)
+    
+    # Check generated kpoints
+    assert len(kpoints) == 6  # 3 grid points + 3 offset values
+    assert all(isinstance(x, int) for x in kpoints[:3])  # Grid points are integers
+    assert all(x == 0 for x in kpoints[3:])  # Offset is always [0,0,0]
+    
+    # Verify calculated grid points
+    # ceil(1 / (lattice_constant * kspacing))
+    assert kpoints[0] == math.ceil(1 / (5 * 0.2))
+    assert kpoints[1] == math.ceil(1 / (5 * 0.2))
+    assert kpoints[2] == math.ceil(1 / (5 * 0.2))
+
+def test_convert_openai_to_gemini():
+    """Test the convert_openai_to_gemini function"""
+    openai_prompt = [
+        {"role": "system", "content": "You are a helpful assistant"},
+        {"role": "user", "content": "Hello"},
+        {"role": "assistant", "content": "Hi there!"}
+    ]
+    
+    gemini_prompt = convert_openai_to_gemini(openai_prompt)
+    
+    # Check conversion
+    assert len(gemini_prompt) == 3
+    assert gemini_prompt[0]['role'] == 'user'  # System converted to user
+    assert gemini_prompt[0]['parts'][0]['text'] == "You are a helpful assistant"
+    assert gemini_prompt[1]['role'] == 'user'
+    assert gemini_prompt[2]['role'] == 'model'  # Assistant converted to model

@@ -70,7 +70,7 @@ with st.sidebar:
                                    )
     elif llm_name_value in ['gemini-2.0-flash']:
         gemini_api_key = st.text_input ("Gemini API Key ([Get Gemini API Key](https://aistudio.google.com/apikey))",
-                                        key="groq_api_key", 
+                                        key="gemini_api_key", 
                                         type="password",
                                         )
     if llm_name_value in ['llama-3.3-70b-versatile','gemma2-9b-it']:
