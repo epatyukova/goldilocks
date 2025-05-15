@@ -8,6 +8,9 @@ from typing import Dict
 import streamlit as st
 from pathlib import Path
 import math
+from openai import OpenAI
+from groq import Groq
+import google.generativeai as genai
 
 def list_of_pseudos(pseudo_potentials_folder: str, 
                     functional: str,
@@ -146,6 +149,68 @@ def generate_kpoints_grid(structure, kspacing):
     kpoints.extend([0,0,0])
     return kpoints
 
+def create_task(structure,kspacing,list_of_element_files, cutoffs):
+    input_file_schema="Below is the QE input file for SCF calculations for NaCl. Can you generate the \
+                    similar one for my compound for which I will give parameters? \
+                    Check line by line that only material parameters are different.\
+                    &CONTROL\
+                    pseudo_dir       = './'\
+                    calculation      = 'scf'\
+                    restart_mode     = 'from_scratch'\
+                    tprnfor          = .true.\
+                    /\
+                    &SYSTEM\
+                    ecutwfc          = 40  ! put correct energy cutoff here\
+                    ecutrho          = 320 ! put correct density cutoff here\
+                    occupations      = 'smearing'\
+                    degauss          = 0.01 ! you can change the number\
+                    smearing         = 'cold' ! choose correct smearing method\
+                    ntyp             = 2 ! put correct number of atoms types\
+                    nat              = 2 ! put correct number of atoms\
+                    ibrav            = 0\
+                    /\
+                    &ELECTRONS\
+                    electron_maxstep = 80\
+                    conv_thr         = 1e-10\
+                    mixing_mode      = 'plain'\
+                    mixing_beta      = 0.4\
+                    / \
+                    ATOMIC_SPECIES \
+                    Na 22.98976928 na_pbe_v1.5.uspp.F.UPF \
+                    Cl 35.45 cl_pbe_v1.4.uspp.F.UPF \
+                    K_POINTS automatic\
+                    9 9 9  0 0 0\
+                    CELL_PARAMETERS angstrom\
+                    3.43609630987442 0.00000000000000 1.98383169159751\
+                    1.14536543840311 3.23958308210503 1.98383169547732\
+                    0.00000000000000 0.00000000000000 3.96766243000000\
+                    ATOMIC_POSITIONS angstrom \
+                    Na 0.0000000000 0.0000000000 0.0000000000\
+                    Cl 2.2907350089 1.6197900184 3.9676599923\
+                     "
+    
+    cell_params=structure.lattice.matrix
+    atomic_positions=atomic_positions_list(structure)
+    kpoints=generate_kpoints_grid(structure, kspacing)
+
+    task=f"You are the assitant for generation input file for single point \
+              energy calculations with Quantum Espresso. If the user asks to generate an input file, \
+              the following information is availible to you: \
+              the formula of the compound {structure.formula},\
+              the list of pseudo potential files {list_of_element_files},\
+              the path to pseudo potential files './',\
+              the cell parameters in angstroms {cell_params},\
+              the atomic positions in angstroms {atomic_positions},\
+              the energy cutoff is {cutoffs[ 'max_ecutwfc']} in Ry,\
+              the density cutoff is {cutoffs[ 'max_ecutrho']} in Ry,\
+              kpoints automatic are {kpoints}, \
+              number of atoms is {len(structure.sites)} \
+              Please calculate forces, and do gaussian smearing for dielectrics and semiconductors \
+              and cold smearing for metals.  Try to assess whether the provided compound is \
+              metal, dielectric or semiconductor before generation."
+    
+    return input_file_schema, task
+
 def generate_response(messages,client,llm_model):
     """Generator function to stream response from Groq API"""
     response = client.chat.completions.create(
@@ -181,3 +246,30 @@ def convert_openai_to_gemini(openai_prompt):
 def gemini_stream_to_streamlit(gemini_stream):
     for chunk in gemini_stream:
         yield chunk.candidates[0].content.parts[0].text
+
+def create_client(llm_name, api_key):
+    if llm_name in ["gpt-4o", "gpt-4o-mini", 'gpt-3.5-turbo']:
+        return OpenAI(api_key=api_key)
+    elif llm_name in ['llama-3.3-70b-versatile','gemma2-9b-it']:
+        return Groq(api_key=api_key)
+    elif llm_name in ['gemini-2.0-flash']:
+        genai.configure(api_key=api_key)
+        return genai.GenerativeModel("gemini-2.0-flash")
+
+def generate_llm_response(llm_name, messages, client):
+    if llm_name in ["gpt-4o", "gpt-4o-mini", 'gpt-3.5-turbo']:
+        return client.chat.completions.create(
+            model=llm_name,
+            messages=[{"role": m["role"], "content": m["content"]} for m in messages],
+            temperature=0,
+            stream=True,
+        )
+    elif llm_name in ['llama-3.3-70b-versatile','gemma2-9b-it']:
+        return generate_response(messages=[{"role": m["role"], "content": m["content"]} for m in messages],
+                                       client=client,
+                                       llm_model=llm_name)
+    elif llm_name in ['gemini-2.0-flash']:
+        gemini_prompt=convert_openai_to_gemini(messages)
+        return gemini_stream_to_streamlit(client.generate_content(gemini_prompt, 
+                                           generation_config={"temperature": 0},
+                                           stream=True))

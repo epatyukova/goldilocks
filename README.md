@@ -8,7 +8,7 @@ A web application for generation input for Quantum Espresso single point SCF cal
    * [Web application](#web-application)
    * [Running locally](#running-locally)
        * [Docker container](#docker-container)
-       * [Running in python environment](#running-in-python-environment)
+       * [Running in python virtual environment](#running-in-python-virtual-environment)
 * [Features](#features)
 * [Related research](#related-research)
 * [License](#license)
@@ -41,7 +41,7 @@ docker run -p 8501:8501 goldilocks-app
 ```
 http://localhost:8501
 ```
-#### Running in python environment
+#### Running in python virtual environment
 * Install Python (>=3.10,<3.13)
 * Install Poetry
 * Create a clean environment (here it is done with venv, but conda, etc. can also be used)
