@@ -9,7 +9,6 @@ from kspacing_model import predict_kspacing
 @pytest.fixture
 def sample_structure():
     """Create a sample structure for testing"""
-    # Create a simple SiO2 structure
     lattice = [[5, 0, 0], [0, 5, 0], [0, 0, 5]]
     species = ['Si', 'O', 'O']
     coords = [[0, 0, 0], [0.5, 0.5, 0.5], [0.5, 0.5, 0]]
