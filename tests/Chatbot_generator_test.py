@@ -1,10 +1,7 @@
 import sys
 import os
-# import numpy as np
 from streamlit.testing.v1 import AppTest
 import pytest
-# from unittest.mock import patch, MagicMock
-# import streamlit as st
 from pymatgen.core.structure import Structure
 
 
@@ -52,3 +49,4 @@ def sample_structure():
     species = ['Si', 'O', 'O']
     coords = [[0, 0, 0], [0.5, 0.5, 0.5], [0.5, 0.5, 0]]
     return Structure(lattice=lattice,species=species,coords=coords)
+
