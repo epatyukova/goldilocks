@@ -5,6 +5,7 @@ import pytest
 from pymatgen.core.structure import Structure
 from unittest.mock import patch
 
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/qe_input')))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/qe_input/pages')))
 
@@ -111,4 +112,5 @@ def test_messages_in_session_state(sample_structure, fake_openai_stream):
         at.run(timeout = 10)
         assert 'user' in [m['role'] for m in at.session_state['messages']]
         assert 'assistant' in [m['role'] for m in at.session_state['messages']]
+
 
