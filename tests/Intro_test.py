@@ -385,10 +385,10 @@ def test_pseudos(ELEMENTS):
                 if(functional in pseudo and mode in pseudo):
                     switch_pseudo=1
             for cutoff_name in list_of_cutoffs:
-                if(functional in pseudo and mode in cutoff_name):
+                if(functional in cutoff_name and mode in cutoff_name):
                     switch_cutoff=1
-            assert switch_pseudo # it would be good to add a message about what functional/mode combination fail
-            assert switch_cutoff
+            assert switch_pseudo, f"Missing cutoff file for {functional}-{mode} combination"
+            assert switch_cutoff, f"Missing cutoff file for {functional}-{mode} combination"
 
     for folder in list_of_pseudo_types:
         list_of_files=os.listdir('./src/qe_input/pseudos/'+folder)
