@@ -153,11 +153,11 @@ def test_info_input_page_databases_jarvis(formula, mock_dataframe,sample_structu
         for x in at.get('selectbox'):
             if x.label == 'XC-functional':
                 x._value = 'PBEsol'
-                x.run()
+                x.run(timeout=10)
                 assert at.session_state['functional'] == 'PBEsol'
             if x.label == 'pseudopotential flavour':
                 x._value = 'precision'
-                x.run()
+                x.run(timeout=10)
                 assert at.session_state['mode'] == 'precision'
         assert at.session_state['kspacing_model'] == 'CGCNN'
         assert 'structure' not in at.session_state
@@ -166,10 +166,10 @@ def test_info_input_page_databases_jarvis(formula, mock_dataframe,sample_structu
             if tab.label == 'Search for structure':
                 for input_box in at.get('text_input'):
                     input_box._value = formula
-                    input_box.run()
+                    input_box.run(timeout=10)
                 radio = at.get('radio')[0]
                 radio._value = 'Jarvis'
-                radio.run()
+                radio.run(timeout=10)
                 at.run(timeout=10)
                 assert 'structure' in at.session_state
                 assert at.session_state['structure'].formula == 'Si1 O2'
@@ -205,11 +205,11 @@ def test_info_input_page_databases_MC3D(formula, mock_dataframe,sample_structure
         for x in at.get('selectbox'):
             if x.label == 'XC-functional':
                 x._value = 'PBEsol'
-                x.run()
+                x.run(timeout=10)
                 assert at.session_state['functional'] == 'PBEsol'
             if x.label == 'pseudopotential flavour':
                 x._value = 'precision'
-                x.run()
+                x.run(timeout=10)
                 assert at.session_state['mode'] == 'precision'
         assert at.session_state['kspacing_model'] == 'CGCNN'
         assert 'structure' not in at.session_state
@@ -218,10 +218,10 @@ def test_info_input_page_databases_MC3D(formula, mock_dataframe,sample_structure
             if tab.label == 'Search for structure':
                 for input_box in at.get('text_input'):
                     input_box._value = formula
-                    input_box.run()
+                    input_box.run(timeout=10)
                 radio = at.get('radio')[0]
                 radio._value = 'MC3D'
-                radio.run()
+                radio.run(timeout=10)
                 at.run(timeout=10)
                 assert 'structure' in at.session_state
                 assert at.session_state['structure'].formula == 'Si1 O2'
@@ -252,11 +252,11 @@ def test_info_input_page_mp_database(formula, mock_dataframe, sample_structure):
         for x in at.get('selectbox'):
             if x.label == 'XC-functional':
                 x._value = 'PBEsol'
-                x.run()
+                x.run(timeout=10)
                 assert at.session_state['functional'] == 'PBEsol'
             if x.label == 'pseudopotential flavour':
                 x._value = 'precision'
-                x.run()
+                x.run(timeout=10)
                 assert at.session_state['mode'] == 'precision'
         assert at.session_state['kspacing_model'] == 'CGCNN'
 
@@ -266,18 +266,18 @@ def test_info_input_page_mp_database(formula, mock_dataframe, sample_structure):
                 for text_input in at.get('text_input'):
                     if text_input.label == "Chemical formula (try to find structure in free databases)":
                         text_input._value = formula
-                        text_input.run()
+                        text_input.run(timeout=10)
                 # Select MP database
                 for radio in at.get('radio'):
                     if 'MP' in radio.options:
                         radio._value = 'MP'
-                        radio.run()
+                        radio.run(timeout=10)
 
                 # Set MP API key (mocked) in sidebar or wherever it's rendered
                 for api_input in at.get('text_input'):
                     if api_input.label.startswith("Materials Project API Key"):
                         api_input._value = "dummy_mp_key"
-                        api_input.run()
+                        api_input.run(timeout=10)
 
                 at.run(timeout=10)
                 # Assert structure was set correctly
@@ -315,11 +315,11 @@ def test_info_input_page_databases_OQMD(formula, mock_dataframe,sample_structure
         for x in at.get('selectbox'):
             if x.label == 'XC-functional':
                 x._value = 'PBEsol'
-                x.run()
+                x.run(timeout=10)
                 assert at.session_state['functional'] == 'PBEsol'
             if x.label == 'pseudopotential flavour':
                 x._value = 'precision'
-                x.run()
+                x.run(timeout=10)
                 assert at.session_state['mode'] == 'precision'
         assert at.session_state['kspacing_model'] == 'CGCNN'
         assert 'structure' not in at.session_state
@@ -328,10 +328,10 @@ def test_info_input_page_databases_OQMD(formula, mock_dataframe,sample_structure
             if tab.label == 'Search for structure':
                 for input_box in at.get('text_input'):
                     input_box._value = formula
-                    input_box.run()
+                    input_box.run(timeout=10)
                 radio = at.get('radio')[0]
                 radio._value = 'OQMD'
-                radio.run()
+                radio.run(timeout=10)
                 at.run(timeout=10)
                 assert 'structure' in at.session_state
                 assert at.session_state['structure'].formula == 'Si1 O2'
@@ -351,9 +351,11 @@ def test_pseudos():
     assert os.path.exists('./src/qe_input/pseudos/')
     assert os.path.exists('./src/qe_input/pseudo_cutoffs/')
     list_of_pseudo_types=os.listdir('./src/qe_input/pseudos/')
-    list_of_pseudo_types.remove(".DS_Store")
+    if ".DS_Store" in list_of_pseudo_types:
+        list_of_pseudo_types.remove(".DS_Store")
     list_of_cutoffs=os.listdir('./src/qe_input/pseudo_cutoffs/')
-    list_of_cutoffs.remove(".DS_Store")
+    if ".DS_Store" in list_of_cutoffs:
+        list_of_cutoffs.remove(".DS_Store")
 
     # check that for each combination of functional and mode there is a folder
     # that each folder contains psudos for all elements
