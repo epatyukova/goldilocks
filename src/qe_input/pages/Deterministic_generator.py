@@ -6,12 +6,15 @@ from scipy import stats
 
 st.title("Generate QE input with a deterministic function")
 
+# Initialize session state variables
 if 'all_info' not in st.session_state.keys():
     st.session_state['all_info']=False
 
+# Check if all necessary material information is provided
 if not (st.session_state['all_info']):
     st.info("Please provide all necessary material information on the Intro page")
 
+# Generate QE input if all necessary information is provided
 if st.session_state['all_info']:
     if st.button("Generate QE input"):
         input_file_content=generate_input_file(st.session_state['save_directory'], 

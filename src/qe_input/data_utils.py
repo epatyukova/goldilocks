@@ -10,10 +10,22 @@ from bs4 import BeautifulSoup
 
 
 class StructureLookup:
+    """
+    Class for looking up structures in databases
+    Args:
+        mp_api_key: str
+    """
     def __init__(self, mp_api_key = None):
        self.mp_api_key = mp_api_key
 
     def get_jarvis_table(self, formula):
+        """
+        Get the Jarvis table for a formula
+        Args:
+            formula: str
+        Returns:
+            pd.DataFrame: DataFrame of the Jarvis table
+        """
         df = pd.read_pickle('./src/qe_input/Jarvis.pkl')
         comp=Composition(formula)
         formula=comp.hill_formula
@@ -51,6 +63,13 @@ class StructureLookup:
         return result
 
     def get_jarvis_structure_by_id(self, jid):
+        """
+        Get the Jarvis structure by id
+        Args:
+            jid: str
+        Returns:
+            pymatgen.core.structure.Structure: Structure of the Jarvis structure
+        """
         df = pd.read_pickle('./src/qe_input/Jarvis.pkl')
         da = df.loc[df['jid'] == jid]
         if da.empty:
@@ -62,12 +81,25 @@ class StructureLookup:
                          coords_are_cartesian=True)
     
     def mp_request(self,formula):
+        """
+        Get the MP docs by formula
+        Args:
+            formula: str
+        Returns:
+            list: list of MP docs
+        """
         with MPRester(self.mp_api_key) as mpr:
             docs = mpr.materials.summary.search(formula=formula)
         return docs
 
     def get_mp_structure_table(self, formula):
-
+        """
+        Get the MP structure table by formula
+        Args:
+            formula: str
+        Returns:
+            pd.DataFrame: DataFrame of the MP structure table
+        """
         docs=self.mp_request(self,formula)
 
         if not docs:
@@ -76,9 +108,8 @@ class StructureLookup:
         rows = []
         for doc in docs:
             structure = doc.structure
-            # spacegroup = structure.get_space_group_info(symprec=0.01, angle_tolerance=5.0)[0]
-            # structure = structure.get_reduced_structure()
-            spacegroup='P1'
+            spacegroup = structure.get_space_group_info(symprec=0.01, angle_tolerance=5.0)[0]
+            structure = structure.get_reduced_structure()
 
             rows.append({
                 "select": False,
@@ -97,15 +128,36 @@ class StructureLookup:
         return result
     
     def mp_request_id(self,material_id):
+        """
+        Get the MP doc by id
+        Args:
+            material_id: str
+        Returns:
+            MPDoc: MP doc
+        """
         with MPRester(self.mp_api_key) as mpr:
             doc = mpr.materials.summary.get_data_by_id(material_id)
         return doc
 
     def get_mp_structure_by_id(self, material_id):
+        """
+        Get the MP structure by id
+        Args:
+            material_id: str
+        Returns:
+            pymatgen.core.structure.Structure: Structure of the MP structure
+        """
         doc = self.mp_request_id(material_id)
         return doc.structure if doc else None
 
     def get_mc3d_structure_table(_self, formula):
+        """
+        Get the MC3D structure table by formula
+        Args:
+            formula: str
+        Returns:
+            pd.DataFrame: DataFrame of the MC3D structure table
+        """
         df = pd.read_json('./src/qe_input/mc3d_structures/mc3d_filtered_entries_pbe-v1_2025-01-16-01-09-20.json')
         formula=Composition(formula).hill_formula
         da = df.loc[df['formula_hill'] == formula].reset_index(drop=True)
@@ -138,6 +190,13 @@ class StructureLookup:
         return result
     
     def get_mc3d_structure_by_id(self, material_id):
+        """
+        Get the MC3D structure by id
+        Args:
+            material_id: str
+        Returns:
+            pymatgen.core.structure.Structure: Structure of the MC3D structure
+        """
         df = pd.read_json('./src/qe_input/mc3d_structures/mc3d_filtered_entries_pbe-v1_2025-01-16-01-09-20.json')
         da=df.loc[df['id'] == material_id]
         if da.empty:
@@ -147,6 +206,13 @@ class StructureLookup:
         return structure
     
     def get_oqmd_structure_table(self, formula):
+        """
+        Get the OQMD structure table by formula
+        Args:
+            formula: str
+        Returns:
+            pd.DataFrame: DataFrame of the OQMD structure table
+        """
         response = requests.get(f"http://oqmd.org/oqmdapi/formationenergy?composition={formula}&limit=50&")
         soup = BeautifulSoup(response.content, 'html.parser')
         content = json.loads(soup.text)
@@ -186,6 +252,13 @@ class StructureLookup:
         return result
     
     def get_oqmd_structure_by_id(self, material_id):
+        """
+        Get the OQMD structure by id
+        Args:
+            material_id: str
+        Returns:
+            pymatgen.core.structure.Structure: Structure of the OQMD structure
+        """
         response = requests.get(f"http://oqmd.org/oqmdapi/entry/{material_id}")
         soup = BeautifulSoup(response.content, 'html.parser')
         content = json.loads(soup.text)
@@ -204,6 +277,14 @@ class StructureLookup:
         return structure
 
     def select_structure_from_table(self, result_df, id_lookup_func: Callable[[str], Structure]) -> Optional[Structure]:
+        """
+        Select a structure from a table and modify it (niggli reduced cell, primitive, supercell)
+        Args:
+            result_df: pd.DataFrame
+            id_lookup_func: Callable[[str], Structure]
+        Returns:
+            pymatgen.core.structure.Structure: Structure of the selected structure
+        """
         if result_df.empty:
             st.info('No structure found for this formula.')
             return None

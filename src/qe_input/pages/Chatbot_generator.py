@@ -10,6 +10,7 @@ gemini_api_key=None
 if 'all_info' not in st.session_state.keys():
     st.session_state['all_info']=False
 
+# Sidebar for selecting the LLM and entering the API keys
 with st.sidebar:
     llm_name_value = st.selectbox('assistant LLM', 
                         ('llama-3.3-70b-versatile','gemini-2.0-flash', 'gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo','gemma2-9b-it'), 
@@ -52,10 +53,11 @@ with st.sidebar:
         if llm_name_value in ['gemini-2.0-flash']:
             st.info("Please add your Gemini API key to continue.", icon="🗝️")
 
+# Check if all necessary material information is provided
 if not (st.session_state['all_info']):
     st.info("Please provide all necessary material information on the Intro page")
 
-
+# Create LLM client if all necessary information is provided    
 if (openai_api_key or groq_api_key or gemini_api_key) and st.session_state['all_info']:
     # Create LLM client.
     if st.session_state['llm_name'] in ["gpt-4o", "gpt-4o-mini", 'gpt-3.5-turbo']:
@@ -69,11 +71,13 @@ if (openai_api_key or groq_api_key or gemini_api_key) and st.session_state['all_
     # Create a session state variable to store the chat messages. This ensures that the
     # messages persist across reruns.
     
+    # Create task for the agent
     input_file_schema, task = create_task(st.session_state['structure'],
                                           st.session_state['kspacing'],
                                           st.session_state['list_of_element_files'],
                                           st.session_state['cutoffs'])
-                                        
+    
+    # Initialize chat history
     if "messages" not in st.session_state:
         st.session_state.messages=[{"role": "system", "content": task}]
         st.session_state.messages.append({"role": "system", "content": input_file_schema})
@@ -81,7 +85,8 @@ if (openai_api_key or groq_api_key or gemini_api_key) and st.session_state['all_
         for message in st.session_state.messages:
             if message['role']=='system':
                 message['content']=task+' '+input_file_schema
-            
+
+    # Display chat history
     for message in st.session_state.messages:
         if(message["role"]=="user"):
             with st.chat_message("user"):
@@ -90,6 +95,7 @@ if (openai_api_key or groq_api_key or gemini_api_key) and st.session_state['all_
             with st.chat_message("assistant"):
                 st.markdown(message["content"])
 
+    # Get user input
     if prompt := st.chat_input("Do you have any questions?"):
 
         # Store and display the current prompt.

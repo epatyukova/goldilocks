@@ -15,7 +15,16 @@ def sample_structure():
     return Structure(lattice=lattice,species=species,coords=coords)
 
 def test_predict_kspacing(sample_structure):
+    """Tests the predict_kspacing function"""
     prediction=predict_kspacing(sample_structure)
     assert len(prediction) == 2
     assert isinstance(prediction[0],float)
     assert isinstance(prediction[1],float)
+
+
+def test_predict_kspacing_with_invalid_structure():
+    """Tests the predict_kspacing function with None structure"""
+    with pytest.raises(AttributeError):
+        predict_kspacing(None)
+
+

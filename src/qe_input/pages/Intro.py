@@ -8,6 +8,7 @@ from utils import list_of_pseudos, cutoff_limits
 from data_utils import StructureLookup  # your class here
 from kspacing_model import predict_kspacing
 
+# Next step button
 @st.fragment
 def next_step():
     st.info('Next choose how to generate an input file:')
@@ -19,6 +20,7 @@ def next_step():
         if st.button("Deterministic generator"):
             st.switch_page("pages/Deterministic_generator.py")
 
+# Intro page
 st.write("# Welcome to QE input generator! 👋")
 st.markdown("This app will help you generate input files for Quantum Espresso calculations.")
 st.sidebar.success("Provide specifications and select a way to generate input")
@@ -26,6 +28,7 @@ st.sidebar.success("Provide specifications and select a way to generate input")
 st.session_state['all_info'] = False
 structure = None
 
+# Sidebar for selecting the functional and mode
 col1, col2 = st.columns(2)
 with col1:
     functional_value = st.selectbox('XC-functional', ('PBE', 'PBEsol'), index=None, placeholder='PBE')

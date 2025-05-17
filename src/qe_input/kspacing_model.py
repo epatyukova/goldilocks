@@ -30,7 +30,14 @@ model_config={
 }
 
 def predict_kspacing(structure, config=model_config):
-
+    """
+    Predict the kspacing for a structure using the CGCNN model
+    Args:
+        structure: pymatgen.core.structure.Structure
+        config: dict
+    Returns:
+        tuple: klength, klength_std
+    """
     file_name='./src/qe_input/cgcnn/cgcnn_data/0.cif'
     write_cif=CifWriter(structure)
     write_cif.write_file(file_name)

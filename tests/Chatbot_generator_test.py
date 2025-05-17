@@ -9,8 +9,6 @@ from unittest.mock import patch
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/qe_input')))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/qe_input/pages')))
 
-from utils import generate_llm_response
-
 def test_sidebar():
     """Testing Openai chatbot page"""
     at = AppTest.from_file("src/qe_input/QE_input.py")
