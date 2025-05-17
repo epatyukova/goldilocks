@@ -5,6 +5,7 @@ from pymatgen.core.structure import Structure
 import tempfile
 import json
 import math
+from unittest.mock import MagicMock
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/qe_input')))
 
 from utils import (
@@ -17,43 +18,46 @@ from utils import (
     convert_openai_to_gemini
     )
 
-CIF="""# generated using pymatgen
-data_CoF2
-_symmetry_space_group_name_H-M   'P 1'
-_cell_length_a   4.64351941
-_cell_length_b   4.64351941
-_cell_length_c   3.19916469
-_cell_angle_alpha   90.00000000
-_cell_angle_beta   90.00000000
-_cell_angle_gamma   90.00000000
-_symmetry_Int_Tables_number   1
-_chemical_formula_structural   CoF2
-_chemical_formula_sum   'Co2 F4'
-_cell_volume   68.98126085
-_cell_formula_units_Z   2
-loop_
- _symmetry_equiv_pos_site_id
- _symmetry_equiv_pos_as_xyz
-  1  'x, y, z'
-loop_
- _atom_type_symbol
- _atom_type_oxidation_number
-  Co2+  2.0
-  F-  -1.0
-loop_
- _atom_site_type_symbol
- _atom_site_label
- _atom_site_symmetry_multiplicity
- _atom_site_fract_x
- _atom_site_fract_y
- _atom_site_fract_z
- _atom_site_occupancy
-  Co2+  Co0  1  0.00000000  0.00000000  0.00000000  1
-  Co2+  Co1  1  0.50000000  0.50000000  0.50000000  1
-  F-  F2  1  0.30433674  0.30433674  0.00000000  1
-  F-  F3  1  0.69566326  0.69566326  0.00000000  1
-  F-  F4  1  0.80433674  0.19566326  0.50000000  1
-  F-  F5  1  0.19566326  0.80433674  0.50000000  1"""
+@pytest.fixture
+def sample_cif():
+    CIF="""# generated using pymatgen
+        data_CoF2
+        _symmetry_space_group_name_H-M   'P 1'
+        _cell_length_a   4.64351941
+        _cell_length_b   4.64351941
+        _cell_length_c   3.19916469
+        _cell_angle_alpha   90.00000000
+        _cell_angle_beta   90.00000000
+        _cell_angle_gamma   90.00000000
+        _symmetry_Int_Tables_number   1
+        _chemical_formula_structural   CoF2
+        _chemical_formula_sum   'Co2 F4'
+        _cell_volume   68.98126085
+        _cell_formula_units_Z   2
+        loop_
+        _symmetry_equiv_pos_site_id
+        _symmetry_equiv_pos_as_xyz
+          1  'x, y, z'
+        loop_
+        _atom_type_symbol
+        _atom_type_oxidation_number
+          Co2+  2.0
+          F-  -1.0
+        loop_
+        _atom_site_type_symbol
+        _atom_site_label
+        _atom_site_symmetry_multiplicity
+        _atom_site_fract_x
+        _atom_site_fract_y
+        _atom_site_fract_z
+        _atom_site_occupancy
+          Co2+  Co0  1  0.00000000  0.00000000  0.00000000  1
+          Co2+  Co1  1  0.50000000  0.50000000  0.50000000  1
+          F-  F2  1  0.30433674  0.30433674  0.00000000  1
+          F-  F3  1  0.69566326  0.69566326  0.00000000  1
+          F-  F4  1  0.80433674  0.19566326  0.50000000  1
+          F-  F5  1  0.19566326  0.80433674  0.50000000  1"""
+    return CIF
 
 ELEMENTS=['Ac', 'Ag', 'Al', 'Am', 'Ar', 'As', 'At', 'Au', 'B', 'Ba', 'Be',\
        'Bi', 'Bk', 'Br', 'C', 'Ca', 'Cd', 'Ce', 'Cf', 'Cl', 'Cm', 'Co',\
@@ -74,6 +78,29 @@ def sample_structure():
     species = ['Si', 'O', 'O']
     coords = [[0, 0, 0], [0.5, 0.5, 0.5], [0.5, 0.5, 0]]
     return Structure(lattice=lattice,species=species,coords=coords)
+
+@pytest.fixture
+def mock_structure():
+    """Create a mock structure that doesn't depend on real file I/O"""
+    structure = MagicMock(spec=Structure)
+    structure.formula = 'Si1 O2'
+    structure.lattice = MagicMock()
+    structure.lattice.abc = (5.0, 5.0, 5.0)  # Mock lattice parameters
+    structure.lattice.angles = (90.0, 90.0, 90.0)  # Mock lattice angles
+    structure.species = ['Si', 'O', 'O']
+    structure.frac_coords = [[0, 0, 0], [0.5, 0.5, 0.5], [0.5, 0.5, 0]]
+    structure.cart_coords = [[0. , 0. , 0. ], [2.5, 2.5, 2.5], [2.5, 2.5, 0. ]]
+
+    return structure
+
+
+@pytest.fixture
+def mock_json_cutoffs():
+    """Mock JSON data for cutoffs"""
+    return {
+        'Si': {'cutoff_wfc': 40, 'cutoff_rho': 320},
+        'O': {'cutoff_wfc': 50, 'cutoff_rho': 400}
+    }
 
 @pytest.fixture
 def temp_pseudo_folders():
@@ -113,7 +140,7 @@ def temp_pseudo_folders():
         }
 
 # test for list_of_pseudos function which creates a list of pseudo files for compound
-def test_list_of_pseudos(temp_pseudo_folders, sample_structure):
+def test_list_of_pseudos(temp_pseudo_folders):
     """Test the list_of_pseudos function"""
     pseudo_folder = temp_pseudo_folders['pseudo_folder']
     target_folder = temp_pseudo_folders['target_folder']

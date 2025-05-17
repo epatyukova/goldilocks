@@ -138,6 +138,13 @@ def update_input_file(file_path: str, new_content: str) -> None:
     return
 
 def atomic_positions_list(structure):
+    """
+    Convert the atomic positions of a structure to a string
+    Args:
+        structure: pymatgen.core.structure.Structure
+    Returns:
+        string: string of atomic positions
+    """
     string=""
     for site in structure.sites:
         string+=site.as_dict()['species'][0]['element']+' '+str(site.coords[0])+\
@@ -145,11 +152,29 @@ def atomic_positions_list(structure):
     return string
 
 def generate_kpoints_grid(structure, kspacing):
+    """
+    Generate kpoints grid for a structure
+    Args:
+        structure: pymatgen.core.structure.Structure
+        kspacing: float
+    Returns:
+        list: list of kpoints
+    """
     kpoints = [math.ceil(1/x/kspacing) for x in structure.lattice.abc]
     kpoints.extend([0,0,0])
     return kpoints
 
 def create_task(structure,kspacing,list_of_element_files, cutoffs):
+    """
+    Create a task for the agent
+    Args:
+        structure: pymatgen.core.structure.Structure
+        kspacing: float
+        list_of_element_files: list
+        cutoffs: dict
+    Returns:
+        tuple: input_file_schema, task
+    """
     input_file_schema="Below is the QE input file for SCF calculations for NaCl. Can you generate the \
                     similar one for my compound for which I will give parameters? \
                     Check line by line that only material parameters are different.\
@@ -212,7 +237,14 @@ def create_task(structure,kspacing,list_of_element_files, cutoffs):
     return input_file_schema, task
 
 def generate_response(messages,client,llm_model):
-    """Generator function to stream response from Groq API"""
+    """Generator function to stream response from Groq API
+    Args:
+        messages: list
+        client: Groq
+        llm_model: str
+    Returns:
+        generator: generator of response
+    """
     response = client.chat.completions.create(
         model=llm_model,  # Example model, change as needed
         messages=messages,
@@ -226,7 +258,12 @@ def generate_response(messages,client,llm_model):
 
 
 def convert_openai_to_gemini(openai_prompt):
-    """Converts prompt in openai format to gemini format (no 'system' role)"""
+    """Converts prompt in openai format to gemini format (no 'system' role)
+    Args:
+        openai_prompt: list
+    Returns:
+        gemini_prompt: list
+    """
     gemini_prompt = []  # List of message objects
 
     for message in openai_prompt:
@@ -244,10 +281,23 @@ def convert_openai_to_gemini(openai_prompt):
     return gemini_prompt
 
 def gemini_stream_to_streamlit(gemini_stream):
+    """Stream response from Gemini API to Streamlit
+    Args:
+        gemini_stream: generator
+    Returns:
+        generator: generator of response
+    """
     for chunk in gemini_stream:
         yield chunk.candidates[0].content.parts[0].text
 
 def create_client(llm_name, api_key):
+    """Create a client for the LLM
+    Args:
+        llm_name: str
+        api_key: str
+    Returns:
+        client: client for the LLM
+    """
     if llm_name in ["gpt-4o", "gpt-4o-mini", 'gpt-3.5-turbo']:
         return OpenAI(api_key=api_key)
     elif llm_name in ['llama-3.3-70b-versatile','gemma2-9b-it']:
@@ -257,6 +307,14 @@ def create_client(llm_name, api_key):
         return genai.GenerativeModel("gemini-2.0-flash")
 
 def generate_llm_response(llm_name, messages, client):
+    """Generate a response from the LLM
+    Args:
+        llm_name: str
+        messages: list
+        client: client for the LLM
+    Returns:
+        generator: generator of response
+    """
     if llm_name in ["gpt-4o", "gpt-4o-mini", 'gpt-3.5-turbo']:
         return client.chat.completions.create(
             model=llm_name,
