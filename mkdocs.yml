@@ -1,6 +1,7 @@
 site_name: Goldilocks Documentation
 site_url: https://stfc.github.io/goldilocks/
 use_directory_urls: false
+docs_dir: docs
 
 theme:
   name: material
