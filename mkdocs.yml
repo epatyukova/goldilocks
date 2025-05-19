@@ -1,4 +1,7 @@
 site_name: Goldilocks Documentation
+site_url: https://stfc.github.io/goldilocks/
+use_directory_urls: false
+
 theme:
   name: material
   palette:
