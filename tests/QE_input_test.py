@@ -10,7 +10,7 @@ def test_parent_page():
     at = AppTest.from_file("src/qe_input/QE_input.py")
     at.run(timeout=10)
     assert not at.exception
-    at.switch_page("pages/README.py")
+    at.switch_page("pages/Documentation.py")
     at.run(timeout=10)
     assert not at.exception
     at.switch_page("pages/Intro.py")
