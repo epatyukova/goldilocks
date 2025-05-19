@@ -14,6 +14,8 @@ A web application for generation input for Quantum Espresso single point SCF cal
 * [License](#license)
 * [Funding](#funding)
 
+Further documentation can be found [here](https://stfc.github.io/goldilocks/)
+
 ## Running the application
 
 ### Web application
