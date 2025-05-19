@@ -1,0 +1,28 @@
+site_name: Goldilocks Documentation
+theme:
+  name: material
+  palette:
+    scheme: default  # or slate, dracula, etc.
+    primary: grey  # main color
+    accent: amber     # highlights and links
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - toc.integrate
+nav:
+  - Home: index.md
+  - Running the application:
+      - As a webapp: running-the-application-as-webapp.md
+      - Locally: running-the-application-locally.md
+  - UI Guide: 
+      - Introduction: ui-guide.md
+      - Data input page: intro.md
+      - Deterministic generation: deterministic.md
+      - LLM generation: chat_llm.md
+  - Related research: 
+      - Related reserch: related-research.md
+      - Data generation approach: data-generation-approach.md
+      - Models for k-mesh prediction: kpoints.md
+  - License: license.md
+
+
