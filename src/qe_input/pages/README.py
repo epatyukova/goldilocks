@@ -21,6 +21,8 @@ st.markdown("""
 
             """)
 
+st.markdown("""Further documentation can be found [here](https://stfc.github.io/goldilocks/)""")
+
 st.subheader("References")
 
 st.markdown("""

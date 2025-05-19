@@ -1,0 +1,1 @@
+Here you can find information about using the Goldilocks app.
