@@ -13,8 +13,7 @@ st.markdown("""
             (and by this make computations more sustainable) we predict these parameters with 
             ML models trained on a database of converged SCF calculations performed before [7,8]. 
 
-            To predict kspacing we use CGCNN model [10]. Currenly the model is trained on Jarvis dataset [7]. 
-            Mean absolute error of the model on the test set is MAE = 8.25, and correlation coefficient is r2 = 0.616.
+            To predict kspacing we use CGCNN model [10].
             
             To facilitate understanding of the content of the input file we provide an integration 
             of the LLMs [9] helping to answer users questions about the content of the input file, 
