@@ -41,6 +41,12 @@ jobs:
         # Second run: fail if there are still issues
         poetry run ruff check .
     
-    - name: Run tests
+    - name: Run tests with coverage
       if: success()
-      run: poetry run pytest --tb=short --disable-warnings
+      run: poetry run pytest --cov=src --cov-report=term --cov-report=xml --tb=short --disable-warnings
+
+    - name: Upload to Coveralls
+      uses: coverallsapp/github-action@v2
+      with:
+        path-to-lcov: coverage.xml
+    

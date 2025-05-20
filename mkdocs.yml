@@ -24,7 +24,7 @@ nav:
       - Deterministic generation: deterministic.md
       - LLM generation: chat_llm.md
   - Related research: 
-      - Related reserch: related-research.md
+      - Choosing parameters for SCF DFT calculation: related-research.md
       - Data generation approach: data-generation-approach.md
       - Models for k-mesh prediction: kpoints.md
   - License: license.md
