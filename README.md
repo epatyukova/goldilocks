@@ -2,6 +2,8 @@
 A web application for generation input for Quantum Espresso single point SCF calculations. The link to the application can be found below.
 
 [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://goldilocks.streamlit.app/)
+[![Coverage Status](https://coveralls.io/repos/github/epatyukova/goldilocks/badge.svg?branch=main)](https://coveralls.io/github/epatyukova/goldilocks?branch=main)
+
 
 ## Contents
 * [Running the application](#running-the-application)
