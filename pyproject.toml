@@ -33,6 +33,7 @@ monty = "==2025.3.3"
 mkdocs = "^1.5"
 mkdocs-material = "^9.5"
 pytest-cov = "^6.1.1"
+coveralls = "^4.0.1"
 
 
 [tool.poetry.urls]
