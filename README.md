@@ -3,6 +3,8 @@ A web application for generation input for Quantum Espresso single point SCF cal
 
 [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://goldilocks.streamlit.app/)
 [![Coverage Status](https://coveralls.io/repos/github/epatyukova/goldilocks/badge.svg?branch=main)](https://coveralls.io/github/epatyukova/goldilocks?branch=main)
+![Docs](https://github.com/stfc/goldilocks/actions/workflows/docs.yml/badge.svg)
+
 
 
 ## Contents
