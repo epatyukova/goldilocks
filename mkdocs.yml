@@ -15,11 +15,8 @@ theme:
     - toc.integrate
 nav:
   - Home: index.md
-  - Running the application:
-      - As a webapp: running-the-application-as-webapp.md
-      - Locally: running-the-application-locally.md
   - UI Guide: 
-      - Introduction: ui-guide.md
+      - Introduction: installation.md
       - Data input page: intro.md
       - Deterministic generation: deterministic.md
       - LLM generation: chat_llm.md
