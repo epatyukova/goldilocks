@@ -39,7 +39,7 @@ with st.sidebar:
             st.info("Please add your OpenAI API key to continue.", icon="🗝️")
 
     if not groq_api_key:
-        if llm_name_value in ['llama-3.3-70b-versatile','gemma2-9b-it']:
+        if llm_name_value in ['llama-3.3-70b-versatile']:
             st.info("Please add your Groq API key to continue.", icon="🗝️")
     
 
@@ -52,7 +52,7 @@ if (openai_api_key or groq_api_key) and st.session_state['all_info']:
     # Create LLM client.
     if st.session_state['llm_name'] in ["gpt-4o", "gpt-4o-mini", 'gpt-3.5-turbo']:
         client = create_client(llm_name=st.session_state['llm_name'], api_key=st.session_state['openai_api_key']) 
-    elif st.session_state['llm_name'] in ['llama-3.3-70b-versatile','gemma2-9b-it']:
+    elif st.session_state['llm_name'] in ['llama-3.3-70b-versatile']:
         client = create_client(llm_name = st.session_state['llm_name'], api_key=st.session_state['groq_api_key']) 
 
     st.markdown('** Ask the agent to generate an input QE SCF file for the compound you uploaded**')

@@ -9,7 +9,6 @@ import streamlit as st
 from pathlib import Path
 from openai import OpenAI
 from groq import Groq
-import google.generativeai as genai
 
 def list_of_pseudos(pseudo_potentials_folder: str, 
                     functional: str,
@@ -310,11 +309,9 @@ def create_client(llm_name, api_key):
     """
     if llm_name in ["gpt-4o", "gpt-4o-mini", 'gpt-3.5-turbo']:
         return OpenAI(api_key=api_key)
-    elif llm_name in ['llama-3.3-70b-versatile','gemma2-9b-it']:
+    elif llm_name in ['llama-3.3-70b-versatile']:
         return Groq(api_key=api_key)
-    elif llm_name in ['gemini-2.0-flash']:
-        genai.configure(api_key=api_key)
-        return genai.GenerativeModel("gemini-2.0-flash")
+    
 
 def generate_llm_response(llm_name, messages, client):
     """Generate a response from the LLM
@@ -332,12 +329,8 @@ def generate_llm_response(llm_name, messages, client):
             temperature=0,
             stream=True,
         )
-    elif llm_name in ['llama-3.3-70b-versatile','gemma2-9b-it']:
+    elif llm_name in ['llama-3.3-70b-versatile']:
         return generate_response(messages=[{"role": m["role"], "content": m["content"]} for m in messages],
                                        client=client,
                                        llm_model=llm_name)
-    elif llm_name in ['gemini-2.0-flash']:
-        gemini_prompt=convert_openai_to_gemini(messages)
-        return gemini_stream_to_streamlit(client.generate_content(gemini_prompt, 
-                                           generation_config={"temperature": 0},
-                                           stream=True))
+    
