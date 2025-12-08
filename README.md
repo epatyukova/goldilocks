@@ -5,8 +5,6 @@ A web application for generation input for Quantum Espresso single point SCF cal
 [![Coverage Status](https://coveralls.io/repos/github/epatyukova/goldilocks/badge.svg?branch=main)](https://coveralls.io/github/epatyukova/goldilocks?branch=main)
 ![Docs](https://github.com/stfc/goldilocks/actions/workflows/docs.yml/badge.svg)
 
-
-
 ## Contents
 * [Running the application](#running-the-application)
    * [Web application](#web-application)
