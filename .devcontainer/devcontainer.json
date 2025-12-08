@@ -19,7 +19,7 @@
   "features": {
     "ghcr.io/devcontainers/features/poetry:1": {}
   },
-  "updateContentCommand": "poetry install --no-interaction && poetry export -f requirements.txt --without-hashes --output requirements.txt && echo '✅ Poetry environment ready'",
+  "updateContentCommand": "poetry install --no-interaction && pip install torch-scatter torch-sparse torch-cluster torch-spline-conv -f https://data.pyg.org/whl/torch-2.5.1+cpu.html, '✅ Environment ready'",
   "postAttachCommand": {
     "server": "streamlit run src/qe_input/QE_input.py --server.enableCORS false --server.enableXsrfProtection false"
   },

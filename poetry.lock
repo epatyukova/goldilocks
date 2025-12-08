@@ -7800,23 +7800,6 @@ optree = ["optree (>=0.13.0)"]
 pyyaml = ["pyyaml"]
 
 [[package]]
-name = "torch-cluster"
-version = "1.6.3"
-description = "PyTorch Extension Library of Optimized Graph Cluster Algorithms"
-optional = false
-python-versions = ">=3.8"
-groups = ["main"]
-files = [
-    {file = "torch_cluster-1.6.3.tar.gz", hash = "sha256:78d5a930a5bbd0d8788df8c6d66addd68d6dd292fe3edb401e3dacba26308152"},
-]
-
-[package.dependencies]
-scipy = "*"
-
-[package.extras]
-test = ["pytest", "pytest-cov"]
-
-[[package]]
 name = "torch-geometric"
 version = "2.7.0"
 description = "Graph Neural Network Library for PyTorch"
@@ -7847,51 +7830,6 @@ graphgym = ["protobuf (<4.21)", "pytorch-lightning", "yacs"]
 modelhub = ["huggingface_hub"]
 rag = ["accelerate", "datasets", "pandas", "pcst_fast", "sentencepiece", "torchmetrics", "transformers"]
 test = ["onnx", "onnxruntime", "onnxscript", "pytest", "pytest-cov"]
-
-[[package]]
-name = "torch-scatter"
-version = "2.1.2"
-description = "PyTorch Extension Library of Optimized Scatter Operations"
-optional = false
-python-versions = ">=3.8"
-groups = ["main"]
-files = [
-    {file = "torch_scatter-2.1.2.tar.gz", hash = "sha256:69b3aa435f2424ac6a1bfb6ff702da6eb73b33ca0db38fb26989c74159258e47"},
-]
-
-[package.extras]
-test = ["pytest", "pytest-cov"]
-
-[[package]]
-name = "torch-sparse"
-version = "0.6.18"
-description = "PyTorch Extension Library of Optimized Autograd Sparse Matrix Operations"
-optional = false
-python-versions = ">=3.8"
-groups = ["main"]
-files = [
-    {file = "torch_sparse-0.6.18.tar.gz", hash = "sha256:2f14c510a6e93f404c6ea357210615b3c15a71731f9dbd86f25434e34fb5a741"},
-]
-
-[package.dependencies]
-scipy = "*"
-
-[package.extras]
-test = ["pytest", "pytest-cov"]
-
-[[package]]
-name = "torch-spline-conv"
-version = "1.2.2"
-description = "Implementation of the Spline-Based Convolution Operator of SplineCNN in PyTorch"
-optional = false
-python-versions = ">=3.7"
-groups = ["main"]
-files = [
-    {file = "torch_spline_conv-1.2.2.tar.gz", hash = "sha256:ed45a81da29f774665dbdd4709d7e534cdf16d2e7006dbd06957f35bd09661b2"},
-]
-
-[package.extras]
-test = ["pytest", "pytest-cov"]
 
 [[package]]
 name = "tornado"
@@ -8763,4 +8701,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.13"
-content-hash = "6e5f9a609505c480f47f91d09fb1705fde74c3d77c07ac1746a942cdcf83dfd7"
+content-hash = "a9ef837773a0e6ed4cd2702ef5542cef31d65a9bd5a5570bc119f31ee38a66ce"

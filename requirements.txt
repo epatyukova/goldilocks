@@ -1,3 +1,17 @@
+# Install torch first
+torch==2.5.1
+
+# Install PyTorch Geometric extensions from PyG wheel repository
+--find-links https://data.pyg.org/whl/torch-2.5.1+cpu.html
+torch-scatter
+torch-sparse
+torch-cluster
+torch-spline-conv
+
+# Install torch-geometric
+torch-geometric==2.6.1
+
+
 aiofiles==22.1.0 ; python_version >= "3.10" and python_version < "3.13"
 aiohappyeyeballs==2.6.1 ; python_version >= "3.10" and python_version < "3.13"
 aiohttp==3.13.2 ; python_version >= "3.10" and python_version < "3.13"
@@ -248,12 +262,6 @@ tinycss2==1.4.0 ; python_version >= "3.10" and python_version < "3.13"
 toml==0.10.2 ; python_version >= "3.10" and python_version < "3.13"
 tomli==2.3.0 ; python_version == "3.10"
 toolz==1.1.0 ; python_version >= "3.10" and python_version < "3.13"
-torch-cluster==1.6.3 ; python_version >= "3.10" and python_version < "3.13"
-torch-geometric==2.7.0 ; python_version >= "3.10" and python_version < "3.13"
-torch-scatter==2.1.2 ; python_version >= "3.10" and python_version < "3.13"
-torch-sparse==0.6.18 ; python_version >= "3.10" and python_version < "3.13"
-torch-spline-conv==1.2.2 ; python_version >= "3.10" and python_version < "3.13"
-torch==2.9.1 ; python_version >= "3.10" and python_version < "3.13"
 tornado==6.5.2 ; python_version >= "3.10" and python_version < "3.13"
 tqdm==4.67.1 ; python_version >= "3.10" and python_version < "3.13"
 traitlets==5.14.3 ; python_version >= "3.10" and python_version < "3.13"
