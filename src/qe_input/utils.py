@@ -7,7 +7,6 @@ import numpy as np
 from typing import Dict
 import streamlit as st
 from pathlib import Path
-import math
 from openai import OpenAI
 from groq import Groq
 import google.generativeai as genai
@@ -112,7 +111,7 @@ def generate_input_file(save_directory, structure_file, pseudo_path_temp, dict_p
     save_directory = Path(save_directory)
     filename = save_directory / 'qe.in'
     write_espresso_in(str(filename), structure, input_data=input_data, pseudopotentials=dict_pseudo_file_names, 
-                      kspacing=float(kspacing), format='espresso-in')
+                      kpts=generate_kpoints_grid(pymatgen_structure, kspacing), format='espresso-in')
     input_file_content=''
     with open(str(filename),'r') as file:
         for line in file:
@@ -151,18 +150,29 @@ def atomic_positions_list(structure):
         ' '+str(site.coords[1])+' '+str(site.coords[2])+'\n'
     return string
 
-def generate_kpoints_grid(structure, kspacing):
+def generate_kpoints_grid(structure, kdist, offset = False):
     """
-    Generate kpoints grid for a structure
-    Args:
-        structure: pymatgen.core.structure.Structure
-        kspacing: float
-    Returns:
-        list: list of kpoints
+    Compute the maximum distance between k-points (kdist) from a given mesh and reciprocal cell.
+ 
+    Input:
+    kpointsmesh: List[int] of number of k-points along each reciprocal lattice vector
+    structure: pymatgen structure
+    Output:
+    estimated maximum k-point spacing (in Å⁻¹): float
     """
-    kpoints = [math.ceil(1/x/kspacing) for x in structure.lattice.abc]
-    kpoints.extend([0,0,0])
-    return kpoints
+    recip_lattice = structure.lattice.reciprocal_lattice
+    g1, g2, g3 = recip_lattice.matrix
+    norms = np.linalg.norm([g1, g2, g3], axis=1)  
+    kmesh = []
+   
+    for bn in norms:
+        kmesh.append(int(np.ceil(bn/kdist)))
+    
+    if offset:
+        kmesh.extend([0,0,0])
+        
+    return kmesh
+
 
 def create_task(structure,kspacing,list_of_element_files, cutoffs):
     """
@@ -216,7 +226,7 @@ def create_task(structure,kspacing,list_of_element_files, cutoffs):
     
     cell_params=structure.lattice.matrix
     atomic_positions=atomic_positions_list(structure)
-    kpoints=generate_kpoints_grid(structure, kspacing)
+    kpoints=generate_kpoints_grid(structure, kspacing, offset=True)
 
     task=f"You are the assitant for generation input file for single point \
               energy calculations with Quantum Espresso. If the user asks to generate an input file, \

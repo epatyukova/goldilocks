@@ -31,14 +31,19 @@ structure = None
 # Sidebar for selecting the functional and mode
 col1, col2 = st.columns(2)
 with col1:
-    functional_value = st.selectbox('XC-functional', ('PBE', 'PBEsol'), index=None, placeholder='PBE')
+    functional_value = st.selectbox('XC-functional', ('PBEsol'), index=None, placeholder='PBEsol')
     mode_value = st.selectbox('pseudopotential flavour', ('efficiency', 'precision'), index=None, placeholder='efficiency')
 with col2:
-    kspacing_model = st.selectbox('ML model to predict kspacing', ('CGCNN',), index=None, placeholder='CGCNN')
+    kspacing_model = st.selectbox('ML model to predict kspacing', ('RF','ALIGNN'), index=None, placeholder='RF')
+    confidence_level = st.selectbox('Confidence level', ('0.95', '0.9','0.85'), index=None, placeholder='0.95')
 
-st.session_state['functional'] = functional_value or 'PBE'
+st.session_state['functional'] = functional_value or 'PBEsol'
 st.session_state['mode'] = mode_value or 'efficiency'
-st.session_state['kspacing_model'] = kspacing_model or 'CGCNN'
+st.session_state['kspacing_model'] = kspacing_model or 'RF'
+if confidence_level is not None:
+    st.session_state['confidence_level'] = float(confidence_level)
+else:
+    st.session_state['confidence_level'] = 0.95
 
 tab1, tab2 = st.tabs(["Upload structure", "Search for structure"])
 with tab1:
@@ -55,7 +60,7 @@ elif input_formula:
     formula, _ = composition.get_reduced_formula_and_factor()
 
     structure_database = st.radio('Choose the database to search for the structure',
-                                  options=['Jarvis', 'MP', 'MC3D', 'OQMD'],
+                                  options=['MC3D','Jarvis', 'MP', 'OQMD'],
                                   horizontal=True)
     
     if structure_database == 'Jarvis':
@@ -127,13 +132,16 @@ if structure:
                           st.session_state['mode'], composition)
     st.session_state['cutoffs']=cutoffs
 
-    if(st.session_state['kspacing_model']=='CGCNN'):
-        klength, klength_std=predict_kspacing(structure)
-    
-    kspacing = round(1 / klength , 4)
-    st.session_state['kspacing']=kspacing
-    st.session_state['klength']=klength
-    st.session_state['klength_std']=klength_std
+    if(st.session_state['kspacing_model']=='ALIGNN'):
+        kdist, kdist_upper, kdist_lower=predict_kspacing(structure,'ALIGNN',st.session_state['confidence_level'])
+    elif(st.session_state['kspacing_model']=='RF'):
+        kdist, kdist_upper, kdist_lower=predict_kspacing(structure,'RF',st.session_state['confidence_level'])
+    # elif(st.session_state['kspacing_model']=='HGB'):
+    #     kdist, kdist_upper, kdist_lower=predict_kspacing(structure,'HGB',st.session_state['confidence_level'])
+
+    st.session_state['kdist']=kdist
+    st.session_state['kdist_lower']=kdist_lower
+    st.session_state['kdist_upper']=kdist_upper
     st.session_state['all_info']=True
     
     next_step()

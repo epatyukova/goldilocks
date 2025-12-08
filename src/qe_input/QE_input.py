@@ -1,4 +1,6 @@
 import streamlit as st
+import os
+os.environ["STREAMLIT_WATCHER_TYPE"] = "none"
 
 
 intro_page = st.Page("pages/Intro.py", title="Info input", icon="👋")

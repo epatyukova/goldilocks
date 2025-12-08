@@ -1,35 +1,23 @@
 import numpy as np
+import pandas as pd
 import torch
-from torch.utils.data import DataLoader
-from pymatgen.io.cif import CifWriter
+import joblib
+from pymatgen.core.composition import Composition
+from models.alignn import ALIGNN_PyG
+from models.cgcnn import CGCNN_PyG
+from models.cgcnn_graph import build_radius_cgcnn_graph_from_structure
+from models.alignn_graph import build_alignn_graph_with_angles_from_structure
+from models.atom_features_utils import atom_features_from_structure
+from models.compound_features_utils import matminer_composition_features, matminer_structure_features
+from models.compound_features_utils import soap_features, lattice_features
 
-from cgcnn.model import CrystalGraphConvNet
-from cgcnn.data import CIFData, collate_pool
+from huggingface_hub import hf_hub_download
+from huggingface_hub import HfApi
 
 data_type_np = np.float32
 data_type_torch = torch.float32
 
-model_config={
-    'root_dir': './src/qe_input/cgcnn/cgcnn_data',
-    'train_ratio': 0.8,
-    'val_ratio':0.1,
-    'test_ratio':0.1,
-    'atom_fea_len': 64,
-    'n_conv': 3,
-    'h_fea_len': 128,
-    'n_h': 1,
-    'classification': False,
-    'robust_regression': True,
-    'batch_size': 256,
-    'base_lr': 0.01,
-    'momentum': 0.9,
-    'weight_decay': 0.1,
-    'optim': 'SGD',
-    'pin_memory': True,
-    'patience': 50,
-}
-
-def predict_kspacing(structure, config=model_config):
+def predict_kspacing(structure, model_name, confidence_level=0.95):
     """
     Predict the kspacing for a structure using the CGCNN model
     Args:
@@ -38,52 +26,182 @@ def predict_kspacing(structure, config=model_config):
     Returns:
         tuple: klength, klength_std
     """
-    file_name='./src/qe_input/cgcnn/cgcnn_data/0.cif'
-    write_cif=CifWriter(structure)
-    write_cif.write_file(file_name)
+    # corrections are calculated when the models were trained and calibrated
+    if model_name=='ALIGNN':
+        if confidence_level==0.95:
+            corr=0.0005
+        elif confidence_level==0.9:
+            corr=0.0025
+        elif confidence_level==0.85:
+            corr=-0.0018
+    elif model_name=='RF':
+        if confidence_level==0.95:
+            corr=-0.0016
+        elif confidence_level==0.9:
+            corr=-0.0023
+        elif confidence_level==0.85:
+            corr=-0.0021
 
-    dataset = CIFData(root_dir=config['root_dir'], max_num_nbr=12, radius=10, dmin=0, step=0.2, random_seed=123)
-    structures, _, _ = dataset[0]
-    orig_atom_fea_len = structures[0].shape[-1]
-    nbr_fea_len = structures[1].shape[-1]
-
-    model=CrystalGraphConvNet(orig_atom_fea_len=orig_atom_fea_len,
-                            nbr_fea_len=nbr_fea_len,
-                            atom_fea_len=config['atom_fea_len'], 
-                            n_conv=config['n_conv'], 
-                            h_fea_len=config['h_fea_len'], 
-                            n_h=config['n_h'],
-                            classification=config['classification'],
-                            robust_regression=config['robust_regression'])
+    comp=Composition(structure.formula)
+    formula=Composition(Composition(structure.formula).get_integer_formula_and_factor()[0]).iupac_formula
+    df=pd.DataFrame()
+    df['id']=[0]
+    df['structure']=[structure]
+    df['formula']=[formula]
+    df['composition']=[comp]
     
-    num_models=5
+    # composition features
+    composition_features = matminer_composition_features(df, ['ElementProperty', 'Stoichiometry', 'ValenceOrbital'])
 
-    all_predictions=np.zeros(num_models)
-    all_std=np.zeros(num_models)
+    # structure features
+    structure_features = matminer_structure_features(df, ['GlobalSymmetryFeatures','DensityFeatures'])
 
-    for model_idx in range(num_models):
-        checkpoint = torch.load('./src/qe_input/trained_models/'+'kspacing_checkpoint'+str(model_idx)+'.ckpt', map_location='cpu')
-        model_weights = checkpoint["state_dict"]
-        for key in list(model_weights):
-            model_weights[key.replace("model.", "")] = model_weights.pop(key)
-        model.load_state_dict(model_weights)
-        model.eval()
-        loader=DataLoader(dataset, batch_size=1, collate_fn=collate_pool)
-        for batch in loader:
-            graph, _, _ = batch
-        output = model.forward(graph[0],graph[1],graph[2],graph[3])
-        prediction, log_std = output.chunk(2, dim=-1)
-        all_predictions[model_idx]=float(prediction)
-        std=np.sqrt(np.exp(2.0 * float(log_std)))
-        all_std[model_idx]=float(std)
+    # soap features
+    soap = soap_features(df, soap_params={'r_cut': 10.0, 'n_max': 8, 'l_max': 6, 'sigma': 1.0})
 
-    klength=all_predictions.mean()
-    klength_stde=0
-    klength_stda=0
-    for model_idx in range(num_models):
-        klength_stde+=(klength-all_predictions[model_idx])**2
-        klength_stda+=all_std[model_idx]**2
-    klength_std=(1/(1-num_models)*klength_stde+1/num_models*klength_stda)**0.5
+    # lattice features
+    lattice = lattice_features(df)
+    
+    # calculating metallicity features
+    checkpoint_metal = torch.load('./src/qe_input/trained_models/CGCNN/is_metal.ckpt', map_location='cpu',weights_only=True)
+    metal_model = CGCNN_PyG(**checkpoint_metal['hyper_parameters']['model'])
+    metal_model_weights = checkpoint_metal["state_dict"]
+    for key in list(metal_model_weights):
+        metal_model_weights[key.replace("model.", "")] = metal_model_weights.pop(key)
+    metal_model.load_state_dict(metal_model_weights)
+    metal_model.eval()
+    metal_atomic_features = {'atom_feature_strategy': {'atom_feature_file': './src/qe_input/embeddings/atom_init_original.json', 'soap_atomic': False}}
+    metal_atom_features = atom_features_from_structure(structure, metal_atomic_features)
+    data = build_radius_cgcnn_graph_from_structure(structure, metal_atom_features)
+    metal_features=metal_model.extract_crystal_repr(data)
+    metal_features_np=metal_features.detach().numpy()
 
-    return klength, klength_std
+    if model_name=='ALIGNN':
+        atomic_features = {'atom_feature_strategy': {'atom_feature_file': './src/qe_input/embeddings/atom_init_with_sssp_cutoffs.json', 'soap_atomic': False}}
+        atom_features = atom_features_from_structure(structure, atomic_features)
+        data_g, data_lg = build_alignn_graph_with_angles_from_structure(structure, atom_features)
+        additional_features_df=pd.DataFrame(np.concatenate([composition_features,structure_features,lattice,metal_features_np],axis=1))
+        additional_features=additional_features_df.iloc[0]
+        additional_features = torch.tensor(additional_features, dtype=torch.float32)
+        data_g.additional_compound_features = additional_features
 
+        y_lower=[]
+        y_upper=[]
+        y_med=[]
+        
+        api = HfApi()
+        files = api.list_repo_files(
+                    repo_id="STFC-SCD/kpoints-goldilocks-ALIGNNd",
+                    repo_type="model"
+                )
+        # predict lower quantile
+        if confidence_level==0.95:
+            checkpoints = [f for f in files if f.startswith("quantile95/") and f.endswith(".ckpt")]
+        elif confidence_level==0.90:
+            checkpoints = [f for f in files if f.startswith("quantile90/") and f.endswith(".ckpt")]
+        elif confidence_level==0.85:
+            checkpoints = [f for f in files if f.startswith("quantile85/") and f.endswith(".ckpt")]
+        else:
+            raise ValueError(f"Confidence level {confidence_level} not supported")
+        
+        for ckpt in checkpoints:
+            ckpt_path = hf_hub_download(
+                repo_id="STFC-SCD/kpoints-goldilocks-ALIGNNd",
+                filename=ckpt
+            )
+            checkpoint = torch.load(ckpt_path, map_location='cpu',weights_only=True)
+            model=ALIGNN_PyG(**checkpoint['hyper_parameters']['model'])
+            model_weights = checkpoint["state_dict"]
+            for key in list(model_weights):
+                model_weights[key.replace("model.", "")] = model_weights.pop(key)
+            model.load_state_dict(model_weights)
+            model.eval()
+
+            data_g_copy = data_g.clone()
+            data_lg_copy = data_lg.clone()
+            out=model.forward(data_g_copy,data_lg_copy)
+            y_lower.append(out.detach().numpy()[0])
+
+            # predict median quantile
+        checkpoints = [f for f in files if f.startswith("quantile50/") and f.endswith(".ckpt")]
+        for ckpt in checkpoints:
+            ckpt_path = hf_hub_download(
+                repo_id="STFC-SCD/kpoints-goldilocks-ALIGNNd",
+                filename=ckpt
+            )
+            checkpoint = torch.load(ckpt_path, map_location='cpu',weights_only=True)
+            model=ALIGNN_PyG(**checkpoint['hyper_parameters']['model'])
+            model_weights = checkpoint["state_dict"]
+            for key in list(model_weights):
+                model_weights[key.replace("model.", "")] = model_weights.pop(key)
+            model.load_state_dict(model_weights)
+            model.eval()
+
+            data_g_copy = data_g.clone()
+            data_lg_copy = data_lg.clone()
+            out=model.forward(data_g_copy,data_lg_copy)
+            y_med.append(out.detach().numpy()[0])
+
+            # predict upper quantile
+        if confidence_level==0.95:
+            checkpoints = [f for f in files if f.startswith("quantile5/") and f.endswith(".ckpt")]
+        elif confidence_level==0.90:
+            checkpoints = [f for f in files if f.startswith("quantile10/") and f.endswith(".ckpt")]
+        elif confidence_level==0.85:
+            checkpoints = [f for f in files if f.startswith("quantile15/") and f.endswith(".ckpt")]
+        else:
+            raise ValueError(f"Confidence level {confidence_level} not supported")
+
+        for ckpt in checkpoints:
+            ckpt_path = hf_hub_download(
+                repo_id="STFC-SCD/kpoints-goldilocks-ALIGNNd",
+                filename=ckpt
+            )
+            checkpoint = torch.load(ckpt_path, map_location='cpu',weights_only=True)
+            model=ALIGNN_PyG(**checkpoint['hyper_parameters']['model'])
+            model_weights = checkpoint["state_dict"]
+            for key in list(model_weights):
+                model_weights[key.replace("model.", "")] = model_weights.pop(key)
+            model.load_state_dict(model_weights)
+            model.eval()
+            data_g_copy = data_g.clone()
+            data_lg_copy = data_lg.clone()
+            out=model.forward(data_g_copy,data_lg_copy)
+            y_upper.append(out.detach().numpy()[0])
+        
+        kdist=np.mean(y_med)
+        kdist_upper=np.mean(y_upper)+corr
+        kdist_lower=np.mean(y_lower)-corr
+       
+    elif model_name=='RF':
+        features=np.concatenate([composition_features,structure_features,soap,lattice,metal_features_np],axis=1)
+        if confidence_level==0.95:
+            model_path = hf_hub_download(
+                repo_id="STFC-SCD/kpoints-goldilocks-QRF",
+                filename="QRF95.pkl"
+            )
+            model = joblib.load(model_path)
+        elif confidence_level==0.9:
+            model_path = hf_hub_download(
+                repo_id="STFC-SCD/kpoints-goldilocks-QRF",
+                filename="QRF90.pkl"
+            )
+            model = joblib.load(model_path)
+        elif confidence_level==0.85:
+            model_path = hf_hub_download(
+                repo_id="STFC-SCD/kpoints-goldilocks-QRF",
+                filename="QRF85.pkl"
+            )
+            model = joblib.load(model_path)
+        rf_out=model.predict(features)
+        kdist=rf_out[1][0]
+        kdist_lower=rf_out[0][0]-corr
+        kdist_upper=rf_out[2][0]+corr
+
+    elif model_name=='HGB':
+        pass
+
+
+    return kdist, kdist_upper, kdist_lower
+
+   
