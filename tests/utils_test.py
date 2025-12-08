@@ -251,18 +251,18 @@ def test_atomic_positions_list(sample_structure):
 def test_generate_kpoints_grid(sample_structure):
     """Test generate_kpoints_grid function"""
     kspacing = 0.2
-    kpoints = generate_kpoints_grid(sample_structure, kspacing)
+    kpoints = generate_kpoints_grid(sample_structure, kspacing, offset=False)
     
     # Check generated kpoints
-    assert len(kpoints) == 6  # 3 grid points + 3 offset values
-    assert all(isinstance(x, int) for x in kpoints[:3])  # Grid points are integers
-    assert all(x == 0 for x in kpoints[3:])  # Offset is always [0,0,0]
+    assert len(kpoints) == 3  # 3 grid points
+    assert all(isinstance(x, int) for x in kpoints)  # Grid points are integers
     
     # Verify calculated grid points
-    # ceil(1 / (lattice_constant * kspacing))
-    assert kpoints[0] == math.ceil(1 / (5 * 0.2))
-    assert kpoints[1] == math.ceil(1 / (5 * 0.2))
-    assert kpoints[2] == math.ceil(1 / (5 * 0.2))
+    # ceil(|b| / kdist) where |b| is reciprocal vector norm; for cubic a=5Å, |b|=2π/a≈1.2566
+    expected = math.ceil((2 * math.pi / 5) / kspacing)  # ≈7
+    assert kpoints[0] == expected
+    assert kpoints[1] == expected
+    assert kpoints[2] == expected
 
 def test_convert_openai_to_gemini():
     """Test the convert_openai_to_gemini function"""

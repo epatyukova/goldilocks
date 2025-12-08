@@ -5,7 +5,6 @@ st.title("Generate QE input with an LLM Agent")
 
 groq_api_key=None
 openai_api_key=None
-gemini_api_key=None
 
 if 'all_info' not in st.session_state.keys():
     st.session_state['all_info']=False
@@ -13,7 +12,7 @@ if 'all_info' not in st.session_state.keys():
 # Sidebar for selecting the LLM and entering the API keys
 with st.sidebar:
     llm_name_value = st.selectbox('assistant LLM', 
-                        ('llama-3.3-70b-versatile','gemini-2.0-flash', 'gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo','gemma2-9b-it'), 
+                        ('llama-3.3-70b-versatile', 'gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo'), 
                         index=None, 
                         placeholder='llama-3.3-70b-versatile')
 
@@ -22,21 +21,15 @@ with st.sidebar:
                                     key="openai_api_key", 
                                     type="password",
                                     )
-    elif llm_name_value in ['llama-3.3-70b-versatile','gemma2-9b-it']:
+    elif llm_name_value in ['llama-3.3-70b-versatile']:
         groq_api_key = st.text_input("Groq API Key ([Get an Groq API key](https://console.groq.com/keys))", 
                                    key="groq_api_key", 
                                    type="password",
                                    )
-    elif llm_name_value in ['gemini-2.0-flash']:
-        gemini_api_key = st.text_input ("Gemini API Key ([Get Gemini API Key](https://aistudio.google.com/apikey))",
-                                        key="gemini_api_key", 
-                                        type="password",
-                                        )
-    if llm_name_value in ['llama-3.3-70b-versatile','gemma2-9b-it']:
+
+    if llm_name_value in ['llama-3.3-70b-versatile']:
         st.session_state['llm_name'] = llm_name_value
     elif llm_name_value in ['gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo']:
-        st.session_state['llm_name'] = llm_name_value
-    elif llm_name_value in ['gemini-2.0-flash']:
         st.session_state['llm_name'] = llm_name_value
     else:
         st.session_state['llm_name'] = 'gpt-4o'
@@ -49,23 +42,18 @@ with st.sidebar:
         if llm_name_value in ['llama-3.3-70b-versatile','gemma2-9b-it']:
             st.info("Please add your Groq API key to continue.", icon="🗝️")
     
-    if not gemini_api_key:
-        if llm_name_value in ['gemini-2.0-flash']:
-            st.info("Please add your Gemini API key to continue.", icon="🗝️")
 
 # Check if all necessary material information is provided
 if not (st.session_state['all_info']):
     st.info("Please provide all necessary material information on the Intro page")
 
 # Create LLM client if all necessary information is provided    
-if (openai_api_key or groq_api_key or gemini_api_key) and st.session_state['all_info']:
+if (openai_api_key or groq_api_key) and st.session_state['all_info']:
     # Create LLM client.
     if st.session_state['llm_name'] in ["gpt-4o", "gpt-4o-mini", 'gpt-3.5-turbo']:
         client = create_client(llm_name=st.session_state['llm_name'], api_key=st.session_state['openai_api_key']) 
     elif st.session_state['llm_name'] in ['llama-3.3-70b-versatile','gemma2-9b-it']:
         client = create_client(llm_name = st.session_state['llm_name'], api_key=st.session_state['groq_api_key']) 
-    elif st.session_state['llm_name'] in ['gemini-2.0-flash']:
-        client = create_client(llm_name=st.session_state['llm_name'], api_key=st.session_state['gemini_api_key']) 
 
     st.markdown('** Ask the agent to generate an input QE SCF file for the compound you uploaded**')
     # Create a session state variable to store the chat messages. This ensures that the
@@ -73,7 +61,7 @@ if (openai_api_key or groq_api_key or gemini_api_key) and st.session_state['all_
     
     # Create task for the agent
     input_file_schema, task = create_task(st.session_state['structure'],
-                                          st.session_state['kspacing'],
+                                          st.session_state['kdist_lower'],
                                           st.session_state['list_of_element_files'],
                                           st.session_state['cutoffs'])
     

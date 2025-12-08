@@ -92,19 +92,26 @@ def mock_dataframe():
         })
     return df
 
-def test_info_input_page_file_upload(sample_cif):
+
+@pytest.fixture
+def mock_kspacing():
+    """Return a fixed kdist and bounds to avoid running real models."""
+    return (0.2, 0.25, 0.15)
+
+def test_info_input_page_file_upload(sample_cif, mock_kspacing):
     """
     Test the info input page with upload file option
     Args:
         sample_cif: BytesIO
     """
     at = AppTest.from_file("src/qe_input/pages/Intro.py")
-    at.run(timeout=10)
+    with patch('kspacing_model.predict_kspacing', return_value=mock_kspacing):
+        at.run(timeout=10)
     assert not at.exception
     for x in at.get('selectbox'):
         if(x.label=='XC-functional'):
-            assert 'PBE' in x.options
-            assert 'PBEsol' in x.options
+            # only PBEsol is available now
+            assert x.options == ['PBEsol']
             x._value='PBEsol'
             x.run(timeout=10)
             assert at.session_state['functional']=='PBEsol'
@@ -114,28 +121,38 @@ def test_info_input_page_file_upload(sample_cif):
             x._value='precision'
             x.run(timeout=10)
             assert at.session_state['mode']=='precision'
-    assert at.session_state['kspacing_model']=='CGCNN'
+        if(x.label=='ML model to predict kspacing'):
+            assert set(x.options) == {'RF','ALIGNN'}
+            x._value='RF'
+            x.run(timeout=10)
+            assert at.session_state['kspacing_model']=='RF'
+        if(x.label=='Confidence level'):
+            x._value='0.9'
+            x.run(timeout=10)
+            assert at.session_state['confidence_level']==0.9
+    assert at.session_state['kspacing_model']=='RF'
     assert 'structure' not in at.session_state
     for x in at.get('tab'):
         assert x.label in ['Upload structure','Search for structure']
         if(x.label == 'Upload structure'):
-            with patch('streamlit.file_uploader',return_value=sample_cif):
-                at.run(timeout=10)
-                assert at.session_state['structure']
-                assert at.session_state['structure'].formula == 'Co2 F4'
-                assert at.session_state['save_directory']
-                assert at.session_state['structure_file']
-                assert at.session_state['pseudo_family'] == 'SSSP_1.3.0_PBEsol_precision'
-                assert 'Co' in at.session_state['list_of_element_files'].keys()
-                assert 'F' in at.session_state['list_of_element_files'].keys()
-                assert at.session_state['pseudo_path']
-                assert at.session_state['cutoffs'] == {"max_ecutwfc": 90.0, "max_ecutrho": 1080.0}
-                assert at.session_state['kspacing'] 
-                assert at.session_state['kspacing']
-                assert at.session_state['klength_std']
-                assert at.session_state['all_info']
+            with patch('kspacing_model.predict_kspacing', return_value=mock_kspacing):
+                with patch('streamlit.file_uploader',return_value=sample_cif):
+                    at.run(timeout=10)
+                    assert at.session_state['structure']
+                    assert at.session_state['structure'].formula == 'Co2 F4'
+                    assert at.session_state['save_directory']
+                    assert at.session_state['structure_file']
+                    assert at.session_state['pseudo_family'] == 'SSSP_1.3.0_PBEsol_precision'
+                    assert 'Co' in at.session_state['list_of_element_files'].keys()
+                    assert 'F' in at.session_state['list_of_element_files'].keys()
+                    assert at.session_state['pseudo_path']
+                    assert at.session_state['cutoffs'] == {"max_ecutwfc": 90.0, "max_ecutrho": 1080.0}
+                    assert at.session_state['kdist']
+                    assert at.session_state['kdist_lower']
+                    assert at.session_state['kdist_upper']
+                    assert at.session_state['all_info']
 
-def test_info_input_page_databases_jarvis(formula, mock_dataframe,sample_structure):
+def test_info_input_page_databases_jarvis(formula, mock_dataframe,sample_structure, mock_kspacing):
     """
     Test the info input page with looking the structure in a jarvis database
     Args:
@@ -144,7 +161,8 @@ def test_info_input_page_databases_jarvis(formula, mock_dataframe,sample_structu
         sample_structure: pymatgen.core.structure.Structure
     """
     with patch('data_utils.StructureLookup.get_jarvis_table', return_value=mock_dataframe), \
-         patch('data_utils.StructureLookup.select_structure_from_table', return_value=sample_structure):
+         patch('data_utils.StructureLookup.select_structure_from_table', return_value=sample_structure), \
+         patch('kspacing_model.predict_kspacing', return_value=mock_kspacing):
 
         at = AppTest.from_file("src/qe_input/pages/Intro.py")
         at.run(timeout=10)
@@ -153,6 +171,7 @@ def test_info_input_page_databases_jarvis(formula, mock_dataframe,sample_structu
         # Select functional
         for x in at.get('selectbox'):
             if x.label == 'XC-functional':
+                assert x.options == ['PBEsol']
                 x._value = 'PBEsol'
                 x.run(timeout=10)
                 assert at.session_state['functional'] == 'PBEsol'
@@ -160,7 +179,10 @@ def test_info_input_page_databases_jarvis(formula, mock_dataframe,sample_structu
                 x._value = 'precision'
                 x.run(timeout=10)
                 assert at.session_state['mode'] == 'precision'
-        assert at.session_state['kspacing_model'] == 'CGCNN'
+            if x.label == 'ML model to predict kspacing':
+                x._value = 'RF'
+                x.run(timeout=10)
+        assert at.session_state['kspacing_model'] == 'RF'
         assert 'structure' not in at.session_state
         # Enter formula and select Jarvis
         for tab in at.get('tab'):
@@ -181,13 +203,13 @@ def test_info_input_page_databases_jarvis(formula, mock_dataframe,sample_structu
                 assert 'O' in at.session_state['list_of_element_files'].keys()
                 assert at.session_state['pseudo_path']
                 assert at.session_state['cutoffs'] == {"max_ecutwfc": 75.0, "max_ecutrho": 600.0}
-                assert at.session_state['kspacing'] 
-                assert at.session_state['kspacing']
-                assert at.session_state['klength_std']
+                assert at.session_state['kdist']
+                assert at.session_state['kdist_lower']
+                assert at.session_state['kdist_upper']
                 assert at.session_state['all_info']
 
 
-def test_info_input_page_databases_MC3D(formula, mock_dataframe,sample_structure):
+def test_info_input_page_databases_MC3D(formula, mock_dataframe,sample_structure, mock_kspacing):
     """
     Test the info input page with looking the structure in a jarvis database
     Args:
@@ -196,7 +218,8 @@ def test_info_input_page_databases_MC3D(formula, mock_dataframe,sample_structure
         sample_structure: pymatgen.core.structure.Structure
     """
     with patch('data_utils.StructureLookup.get_mc3d_structure_table', return_value=mock_dataframe), \
-         patch('data_utils.StructureLookup.select_structure_from_table', return_value=sample_structure):
+         patch('data_utils.StructureLookup.select_structure_from_table', return_value=sample_structure), \
+         patch('kspacing_model.predict_kspacing', return_value=mock_kspacing):
 
         at = AppTest.from_file("src/qe_input/pages/Intro.py")
         at.run(timeout=10)
@@ -205,6 +228,7 @@ def test_info_input_page_databases_MC3D(formula, mock_dataframe,sample_structure
         # Select functional
         for x in at.get('selectbox'):
             if x.label == 'XC-functional':
+                assert x.options == ['PBEsol']
                 x._value = 'PBEsol'
                 x.run(timeout=10)
                 assert at.session_state['functional'] == 'PBEsol'
@@ -212,7 +236,10 @@ def test_info_input_page_databases_MC3D(formula, mock_dataframe,sample_structure
                 x._value = 'precision'
                 x.run(timeout=10)
                 assert at.session_state['mode'] == 'precision'
-        assert at.session_state['kspacing_model'] == 'CGCNN'
+            if x.label == 'ML model to predict kspacing':
+                x._value = 'RF'
+                x.run(timeout=10)
+        assert at.session_state['kspacing_model'] == 'RF'
         assert 'structure' not in at.session_state
         # Enter formula and select Jarvis
         for tab in at.get('tab'):
@@ -233,18 +260,19 @@ def test_info_input_page_databases_MC3D(formula, mock_dataframe,sample_structure
                 assert 'O' in at.session_state['list_of_element_files'].keys()
                 assert at.session_state['pseudo_path']
                 assert at.session_state['cutoffs'] == {"max_ecutwfc": 75.0, "max_ecutrho": 600.0}
-                assert at.session_state['kspacing'] 
-                assert at.session_state['kspacing']
-                assert at.session_state['klength_std']
+                assert at.session_state['kdist']
+                assert at.session_state['kdist_lower']
+                assert at.session_state['kdist_upper']
                 assert at.session_state['all_info']       
            
-def test_info_input_page_mp_database(formula, mock_dataframe, sample_structure):
+def test_info_input_page_mp_database(formula, mock_dataframe, sample_structure, mock_kspacing):
     """
     Test the info input page when selecting a structure from the MP database.
     """
 
     with patch('data_utils.StructureLookup.get_mp_structure_table', return_value=mock_dataframe), \
-         patch('data_utils.StructureLookup.select_structure_from_table', return_value=sample_structure):
+         patch('data_utils.StructureLookup.select_structure_from_table', return_value=sample_structure), \
+         patch('kspacing_model.predict_kspacing', return_value=mock_kspacing):
         at = AppTest.from_file("src/qe_input/pages/Intro.py")
         at.run(timeout=10)
         assert not at.exception
@@ -252,6 +280,7 @@ def test_info_input_page_mp_database(formula, mock_dataframe, sample_structure):
         # Set XC-functional and pseudopotential flavour
         for x in at.get('selectbox'):
             if x.label == 'XC-functional':
+                assert x.options == ['PBEsol']
                 x._value = 'PBEsol'
                 x.run(timeout=10)
                 assert at.session_state['functional'] == 'PBEsol'
@@ -259,7 +288,10 @@ def test_info_input_page_mp_database(formula, mock_dataframe, sample_structure):
                 x._value = 'precision'
                 x.run(timeout=10)
                 assert at.session_state['mode'] == 'precision'
-        assert at.session_state['kspacing_model'] == 'CGCNN'
+            if x.label == 'ML model to predict kspacing':
+                x._value = 'RF'
+                x.run(timeout=10)
+        assert at.session_state['kspacing_model'] == 'RF'
 
         # Enter formula in "Search for structure" tab
         for tab in at.get('tab'):
@@ -291,13 +323,13 @@ def test_info_input_page_mp_database(formula, mock_dataframe, sample_structure):
                 assert 'O' in at.session_state['list_of_element_files'].keys()
                 assert at.session_state['pseudo_path']
                 assert at.session_state['cutoffs'] == {"max_ecutwfc": 75.0, "max_ecutrho": 600.0}
-                assert at.session_state['kspacing'] 
-                assert at.session_state['kspacing']
-                assert at.session_state['klength_std']
+                assert at.session_state['kdist']
+                assert at.session_state['kdist_lower']
+                assert at.session_state['kdist_upper']
                 assert at.session_state['all_info']  
 
 
-def test_info_input_page_databases_OQMD(formula, mock_dataframe,sample_structure):
+def test_info_input_page_databases_OQMD(formula, mock_dataframe,sample_structure, mock_kspacing):
     """
     Test the info input page with looking the structure in a jarvis database
     Args:
@@ -306,7 +338,8 @@ def test_info_input_page_databases_OQMD(formula, mock_dataframe,sample_structure
         sample_structure: pymatgen.core.structure.Structure
     """
     with patch('data_utils.StructureLookup.get_oqmd_structure_table', return_value=mock_dataframe), \
-         patch('data_utils.StructureLookup.select_structure_from_table', return_value=sample_structure):
+         patch('data_utils.StructureLookup.select_structure_from_table', return_value=sample_structure), \
+         patch('kspacing_model.predict_kspacing', return_value=mock_kspacing):
 
         at = AppTest.from_file("src/qe_input/pages/Intro.py")
         at.run(timeout=10)
@@ -315,6 +348,7 @@ def test_info_input_page_databases_OQMD(formula, mock_dataframe,sample_structure
         # Select functional
         for x in at.get('selectbox'):
             if x.label == 'XC-functional':
+                assert x.options == ['PBEsol']
                 x._value = 'PBEsol'
                 x.run(timeout=10)
                 assert at.session_state['functional'] == 'PBEsol'
@@ -322,7 +356,10 @@ def test_info_input_page_databases_OQMD(formula, mock_dataframe,sample_structure
                 x._value = 'precision'
                 x.run(timeout=10)
                 assert at.session_state['mode'] == 'precision'
-        assert at.session_state['kspacing_model'] == 'CGCNN'
+            if x.label == 'ML model to predict kspacing':
+                x._value = 'RF'
+                x.run(timeout=10)
+        assert at.session_state['kspacing_model'] == 'RF'
         assert 'structure' not in at.session_state
         # Enter formula and select Jarvis
         for tab in at.get('tab'):
@@ -343,9 +380,9 @@ def test_info_input_page_databases_OQMD(formula, mock_dataframe,sample_structure
                 assert 'O' in at.session_state['list_of_element_files'].keys()
                 assert at.session_state['pseudo_path']
                 assert at.session_state['cutoffs'] == {"max_ecutwfc": 75.0, "max_ecutrho": 600.0}
-                assert at.session_state['kspacing'] 
-                assert at.session_state['kspacing']
-                assert at.session_state['klength_std']
+                assert at.session_state['kdist']
+                assert at.session_state['kdist_lower']
+                assert at.session_state['kdist_upper']
                 assert at.session_state['all_info']            
 
 def test_pseudos(ELEMENTS):
@@ -370,9 +407,7 @@ def test_pseudos(ELEMENTS):
             functional_options=x.options
         if(x.label=='pseudopotential flavour'):
             mode_options=x.options
-    assert 'PBE' in functional_options
-    assert 'PBEsol' in functional_options
-    assert len(functional_options) == 2
+    assert functional_options == ['PBEsol']
     assert 'efficiency' in mode_options
     assert 'precision' in mode_options
     assert len(mode_options) == 2

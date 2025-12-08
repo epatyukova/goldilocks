@@ -30,20 +30,12 @@ def test_sidebar():
             assert at.session_state['openai_api_key'] == 'openai_api_key'
             
             assert 'llama-3.3-70b-versatile' in x.options
-            assert 'gemma2-9b-it' in x.options
             x._value='llama-3.3-70b-versatile'
             x.run(timeout=10)
             assert at.session_state['llm_name']=='llama-3.3-70b-versatile'
             at.sidebar.get('text_input')[0]._value='groq_api_key'
             at.run(timeout=10)
             assert at.session_state['groq_api_key'] == 'groq_api_key'
-            assert 'gemini-2.0-flash' in x.options
-            x._value='gemini-2.0-flash'
-            x.run(timeout=10)
-            assert at.session_state['llm_name']=='gemini-2.0-flash'
-            at.sidebar.get('text_input')[0]._value='gemini_api_key'
-            at.run(timeout=10)
-            assert at.session_state['gemini_api_key'] == 'gemini_api_key'
 
 
 @pytest.fixture
@@ -86,7 +78,9 @@ def test_messages_in_session_state(sample_structure, fake_openai_stream):
     at.run(timeout = 10)
     
     at.session_state['structure'] = sample_structure
-    at.session_state['kspacing'] = 0.02
+    at.session_state['kdist'] = 0.2
+    at.session_state['kdist_lower'] = 0.15
+    at.session_state['kdist_upper'] = 0.25
     at.session_state['list_of_element_files'] = {'O':'O.upf','Si': 'Si.upf'}
     at.session_state['cutoffs'] = {'max_ecutwfc': 40, 'max_ecutrho': 320}
     at.session_state['all_info'] = True
