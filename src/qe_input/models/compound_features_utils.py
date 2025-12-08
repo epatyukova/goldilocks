@@ -2,9 +2,10 @@ import numpy as np
 import pandas as pd
 from typing import List
 import matminer
+from matminer.featurizers import composition as composition_featurizers
+from matminer.featurizers.base import MultipleFeaturizer
 from dscribe.descriptors import SOAP
 from pymatgen.io.ase import AseAtomsAdaptor
-from matminer.featurizers.base import MultipleFeaturizer
 from pymatgen.core.composition import Composition
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
@@ -37,7 +38,7 @@ def matminer_composition_features(df: pd.DataFrame,
     
     list_of_feat_meth=[]
     for feat in list_of_features:
-        if hasattr(matminer.featurizers.composition, feat):
+        if hasattr(composition_featurizers, feat):
             if(feat=='ElementProperty'):
                 method = getattr(matminer.featurizers.composition , feat).from_preset('magpie', impute_nan=True)
             else:
