@@ -134,22 +134,48 @@ def test_get_mp_structure_by_id(structure_lookup, sample_structure):
     assert structure.formula == 'Si1 O2'
 
 
-def test_get_mc3d_structure_table(structure_lookup, mock_mc3d_df, sample_structure):
+def test_get_mc3d_structure_table(structure_lookup, sample_structure):
     """Test get_mc3d_structure_table"""
-    with patch.object(pd,"read_json", return_value=mock_mc3d_df):
-        with patch.object(Structure, "from_file", return_value=sample_structure):
-            result = structure_lookup.get_mc3d_structure_table('O2 Si')
+    # Mock the API response
+    mock_response = MagicMock()
+    mock_response.json.return_value = {
+        "data": [{
+            "id": "mc3d-1234-pbe",
+            "attributes": {
+                "lattice_vectors": [[5, 0, 0], [0, 5, 0], [0, 0, 5]],
+                "cartesian_site_positions": [[0, 0, 0], [0.5, 0.5, 0.5], [0.5, 0.5, 0]],
+                "species_at_sites": ['Si', 'O', 'O'],
+                "space_group_symbol": "P1"
+            }
+        }]
+    }
+    mock_response.raise_for_status = MagicMock()
+    
+    with patch('requests.get', return_value=mock_response):
+        result = structure_lookup.get_mc3d_structure_table('O2 Si')
 
     assert result is not None
     assert len(result) == 1
     assert result.iloc[0]['formula'] == 'O2 Si'
     assert result.iloc[0]['id'] == 'mc3d-1234-pbe'
 
-def test_get_mc3d_structure_by_id(structure_lookup,mock_mc3d_df, sample_structure):
+def test_get_mc3d_structure_by_id(structure_lookup, sample_structure):
     """Test get_mc3d_structure_by_id"""
-    with patch.object(pd,"read_json", return_value=mock_mc3d_df):
-        with patch.object(Structure, "from_file", return_value=sample_structure):
-            structure = structure_lookup.get_mc3d_structure_by_id('mc3d-1234-pbe')
+    # Mock the API response
+    mock_response = MagicMock()
+    mock_response.json.return_value = {
+        "data": {
+            "attributes": {
+                "lattice_vectors": [[5, 0, 0], [0, 5, 0], [0, 0, 5]],
+                "cartesian_site_positions": [[0, 0, 0], [0.5, 0.5, 0.5], [0.5, 0.5, 0]],
+                "species_at_sites": ['Si', 'O', 'O']
+            }
+        }
+    }
+    mock_response.raise_for_status = MagicMock()
+    
+    with patch('requests.get', return_value=mock_response):
+        structure = structure_lookup.get_mc3d_structure_by_id('mc3d-1234-pbe')
 
     assert structure is not None
     assert structure.formula == 'Si1 O2'
@@ -203,9 +229,16 @@ def test_select_structure_from_table(structure_lookup, sample_structure):
     mock_lookup = MagicMock()
     mock_lookup.return_value = sample_structure
     
-    with patch('streamlit.data_editor', return_value=mock_return_value):
-       result=structure_lookup.select_structure_from_table(test_df, mock_lookup)
+    # Mock streamlit components
+    with patch('streamlit.data_editor', return_value=mock_return_value), \
+         patch('streamlit.selectbox', return_value="leave as is"):
+       result = structure_lookup.select_structure_from_table(test_df, mock_lookup)
 
+    # select_structure_from_table now returns a tuple (primitive_structure, structure)
     assert result is not None
-    assert result.formula == 'Si1 O2'
+    assert isinstance(result, tuple)
+    assert len(result) == 2
+    primitive_structure, structure = result
+    assert structure.formula == 'Si1 O2'
+    assert primitive_structure.formula == 'Si1 O2'
 

@@ -160,8 +160,10 @@ def test_info_input_page_databases_jarvis(formula, mock_dataframe,sample_structu
         mock_dataframe: pd.DataFrame
         sample_structure: pymatgen.core.structure.Structure
     """
+    # select_structure_from_table now returns a tuple (primitive_structure, structure)
+    structure_tuple = (sample_structure, sample_structure)
     with patch('data_utils.StructureLookup.get_jarvis_table', return_value=mock_dataframe), \
-         patch('data_utils.StructureLookup.select_structure_from_table', return_value=sample_structure), \
+         patch('data_utils.StructureLookup.select_structure_from_table', return_value=structure_tuple), \
          patch('kspacing_model.predict_kspacing', return_value=mock_kspacing):
 
         at = AppTest.from_file("src/qe_input/pages/Intro.py")
@@ -217,8 +219,10 @@ def test_info_input_page_databases_MC3D(formula, mock_dataframe,sample_structure
         mock_dataframe: pd.DataFrame
         sample_structure: pymatgen.core.structure.Structure
     """
+    # select_structure_from_table now returns a tuple (primitive_structure, structure)
+    structure_tuple = (sample_structure, sample_structure)
     with patch('data_utils.StructureLookup.get_mc3d_structure_table', return_value=mock_dataframe), \
-         patch('data_utils.StructureLookup.select_structure_from_table', return_value=sample_structure), \
+         patch('data_utils.StructureLookup.select_structure_from_table', return_value=structure_tuple), \
          patch('kspacing_model.predict_kspacing', return_value=mock_kspacing):
 
         at = AppTest.from_file("src/qe_input/pages/Intro.py")
@@ -270,8 +274,10 @@ def test_info_input_page_mp_database(formula, mock_dataframe, sample_structure, 
     Test the info input page when selecting a structure from the MP database.
     """
 
+    # select_structure_from_table now returns a tuple (primitive_structure, structure)
+    structure_tuple = (sample_structure, sample_structure)
     with patch('data_utils.StructureLookup.get_mp_structure_table', return_value=mock_dataframe), \
-         patch('data_utils.StructureLookup.select_structure_from_table', return_value=sample_structure), \
+         patch('data_utils.StructureLookup.select_structure_from_table', return_value=structure_tuple), \
          patch('kspacing_model.predict_kspacing', return_value=mock_kspacing):
         at = AppTest.from_file("src/qe_input/pages/Intro.py")
         at.run(timeout=10)
@@ -337,8 +343,10 @@ def test_info_input_page_databases_OQMD(formula, mock_dataframe,sample_structure
         mock_dataframe: pd.DataFrame
         sample_structure: pymatgen.core.structure.Structure
     """
+    # select_structure_from_table now returns a tuple (primitive_structure, structure)
+    structure_tuple = (sample_structure, sample_structure)
     with patch('data_utils.StructureLookup.get_oqmd_structure_table', return_value=mock_dataframe), \
-         patch('data_utils.StructureLookup.select_structure_from_table', return_value=sample_structure), \
+         patch('data_utils.StructureLookup.select_structure_from_table', return_value=structure_tuple), \
          patch('kspacing_model.predict_kspacing', return_value=mock_kspacing):
 
         at = AppTest.from_file("src/qe_input/pages/Intro.py")
