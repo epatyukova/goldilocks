@@ -67,7 +67,9 @@ elif input_formula:
         lookup = StructureLookup() 
         try:
             result = lookup.get_jarvis_table(formula)
-            structure = lookup.select_structure_from_table(result, lookup.get_jarvis_structure_by_id)
+            selected = lookup.select_structure_from_table(result, lookup.get_jarvis_structure_by_id)
+            if selected is not None:
+                primitive_structure, structure = selected
         except Exception as exc:
             st.error(f'Error: {exc}')
     
@@ -77,7 +79,9 @@ elif input_formula:
             lookup = StructureLookup(mp_api_key)
             try:
                 result = lookup.get_mp_structure_table(formula)
-                structure = lookup.select_structure_from_table(result, lookup.get_mp_structure_by_id)
+                selected = lookup.select_structure_from_table(result, lookup.get_mp_structure_by_id)
+                if selected is not None:
+                    primitive_structure, structure = selected
             except Exception as exc:
                 st.error(f"Error: {exc}")
 
@@ -85,7 +89,9 @@ elif input_formula:
         lookup = StructureLookup() 
         try:
             result = lookup.get_mc3d_structure_table(formula)
-            structure = lookup.select_structure_from_table(result, lookup.get_mc3d_structure_by_id)
+            selected = lookup.select_structure_from_table(result, lookup.get_mc3d_structure_by_id)
+            if selected is not None:
+                primitive_structure, structure = selected
         except Exception as exc:
             st.error(f'Error: {exc}')
 
@@ -93,7 +99,9 @@ elif input_formula:
         lookup = StructureLookup() 
         try:
             result = lookup.get_oqmd_structure_table(formula)
-            structure = lookup.select_structure_from_table(result, lookup.get_oqmd_structure_by_id)
+            selected = lookup.select_structure_from_table(result, lookup.get_oqmd_structure_by_id)
+            if selected is not None:
+                primitive_structure, structure = selected
         except Exception as exc:
             st.error(f'Error: {exc}')
 
@@ -106,6 +114,26 @@ elif structure_file:
     with open(file_path, "wb") as f:
         f.write(structure_file.getbuffer())
     structure = Structure.from_file(file_path)
+    primitive_structure=structure.get_primitive_structure()
+    st.success("Structure uploaded.")
+    unit_cell = st.selectbox(
+                "Transform unit cell",
+                ("leave as is", "niggli reduced cell", "primitive", "supercell"),
+                index=None,
+                placeholder="leave as is",
+            )
+    if unit_cell == "niggli reduced cell":
+        structure = structure.get_reduced_structure()
+    elif unit_cell == "primitive":
+        structure = structure.get_primitive_structure()
+    elif unit_cell == "supercell":
+        multi = st.text_input("Multiplication factor (na,nb,nc)", placeholder="(2,2,2)")
+        try:
+            multi = tuple(map(int, multi.strip("()").split(",")))
+            structure.make_supercell(multi)
+            st.info("Supercell created.")
+        except Exception:
+            st.info("Specify supercell.")
 
 if structure:
     save_directory = "./src/qe_input/temp/"
@@ -118,6 +146,7 @@ if structure:
     st.session_state['save_directory']=save_directory
     st.session_state['structure_file']=file_path
     st.session_state['structure']=structure
+    st.session_state['primitive_structure']=structure
 
     composition = Composition(structure.alphabetical_formula)
     st.session_state['composition']=structure.alphabetical_formula
@@ -133,9 +162,9 @@ if structure:
     st.session_state['cutoffs']=cutoffs
 
     if(st.session_state['kspacing_model']=='ALIGNN'):
-        kdist, kdist_upper, kdist_lower=predict_kspacing(structure,'ALIGNN',st.session_state['confidence_level'])
+        kdist, kdist_upper, kdist_lower=predict_kspacing(primitive_structure,'ALIGNN',st.session_state['confidence_level'])
     elif(st.session_state['kspacing_model']=='RF'):
-        kdist, kdist_upper, kdist_lower=predict_kspacing(structure,'RF',st.session_state['confidence_level'])
+        kdist, kdist_upper, kdist_lower=predict_kspacing(primitive_structure,'RF',st.session_state['confidence_level'])
     # elif(st.session_state['kspacing_model']=='HGB'):
     #     kdist, kdist_upper, kdist_lower=predict_kspacing(structure,'HGB',st.session_state['confidence_level'])
 
