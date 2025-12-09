@@ -17,6 +17,21 @@ class StructureLookup:
     """
     def __init__(self, mp_api_key = None):
        self.mp_api_key = mp_api_key
+    
+    def optimade_formula(self, formula: str) -> str:
+        comp = Composition(formula)
+        items = sorted(comp.get_el_amt_dict().items(), key=lambda x: x[0])  # alphabetical
+
+        result = ""
+        for el, amt in items:
+            if amt == 1 or amt == 1.0:
+                result += f"{el}"
+            else:
+                if float(amt).is_integer():
+                    result += f"{el}{int(amt)}"
+                else:
+                    result += f"{el}{amt}"
+        return result
 
     def get_jarvis_table(self, formula):
         """
@@ -27,8 +42,8 @@ class StructureLookup:
             pd.DataFrame: DataFrame of the Jarvis table
         """
         df = pd.read_pickle('./src/qe_input/Jarvis.pkl')
-        comp=Composition(formula)
-        formula=comp.hill_formula
+        comp = Composition(formula)
+        formula = comp.hill_formula
         da = df.loc[df['formula'] == formula].reset_index(drop=True)
 
         if da.empty:
@@ -38,10 +53,10 @@ class StructureLookup:
         for _, row in da.iterrows():
             atoms = row['atoms']
             structure = Structure(
-                lattice=atoms['lattice_mat'],
-                species=atoms['elements'],
-                coords=atoms['coords'],
-                coords_are_cartesian=True
+                lattice = atoms['lattice_mat'],
+                species = atoms['elements'],
+                coords = atoms['coords'],
+                coords_are_cartesian = True
             )
             spacegroup = structure.get_space_group_info(symprec=0.01, angle_tolerance=5.0)[0]
             structure = structure.get_reduced_structure()
@@ -100,7 +115,7 @@ class StructureLookup:
         Returns:
             pd.DataFrame: DataFrame of the MP structure table
         """
-        docs=self.mp_request(self,formula)
+        docs=self.mp_request(formula)
 
         if not docs:
             return pd.DataFrame()
@@ -150,60 +165,86 @@ class StructureLookup:
         doc = self.mp_request_id(material_id)
         return doc.structure if doc else None
 
-    def get_mc3d_structure_table(_self, formula):
+    def get_mc3d_structure_table(self, formula):
         """
-        Get the MC3D structure table by formula
-        Args:
-            formula: str
-        Returns:
-            pd.DataFrame: DataFrame of the MC3D structure table
+        Query MC3D OPTIMADE endpoint and return a table of matching structures.
         """
-        df = pd.read_json('./src/qe_input/mc3d_structures/mc3d_filtered_entries_pbe-v1_2025-01-16-01-09-20.json')
-        formula=Composition(formula).hill_formula
-        da = df.loc[df['formula_hill'] == formula].reset_index(drop=True)
+        base_url = "https://optimade.materialscloud.org/main/mc3d-pbesol-v1/v1/structures"
 
-        if da.empty:
-            return None
-        
+        # Convert to OPTIMADE alphabetical format, e.g. "SiO2" → "O2Si"
+        formula_opt = self.optimade_formula(formula)
+
+        filter_expr = f'chemical_formula_reduced="{formula_opt}"'
+        params = {
+            "filter": filter_expr,
+            "page_limit": 50,
+            "response_format": "json",
+        }
+
+        response = requests.get(base_url, params=params)
+        response.raise_for_status()
+        data = response.json()
+
+        entries = data.get("data", [])
+        if not entries:
+            return pd.DataFrame()
+
         rows = []
-        for _, row in da.iterrows():
-            ID=row['id']
-            structure_file='./src/qe_input/mc3d_structures/mc3d-pbe-cifs/'+ID[:-7]+'-pbe.cif'
-            structure = Structure.from_file(structure_file)
+        for entry in entries:
+            attr = entry["attributes"]
+            lattice = attr["lattice_vectors"]           # 3×3 matrix
+            cart_coords = attr["cartesian_site_positions"]
+            species = attr["species_at_sites"]
+
+            structure = Structure(
+                lattice=lattice,
+                species=species,
+                coords=cart_coords,
+                coords_are_cartesian=True
+            )
             spacegroup = structure.get_space_group_info(symprec=0.01, angle_tolerance=5.0)[0]
-            structure = structure.get_reduced_structure()
+
+            reduced_structure = structure.get_reduced_structure()
 
             rows.append({
-                'select': False,
-                "formula": Composition(structure.formula).hill_formula,
-                'form_energy_per_atom': '-',
-                'sg': spacegroup,
-                'sg_mc3d': row['spacegroup_int'],
-                'natoms': structure.num_sites,
-                'abc': [round(x, 2) for x in structure.lattice.abc],
-                'angles': [round(x, 1) for x in structure.lattice.angles],
-                'id': ID
+                "select": False,
+                "formula": Composition(reduced_structure.formula).hill_formula,
+                "form_energy_per_atom": "-",  # MC3D does not provide formation energy
+                "sg": spacegroup,
+                "sg_mc3d": attr.get("space_group_symbol", "-"),
+                "natoms": reduced_structure.num_sites,
+                "abc": [round(x, 2) for x in reduced_structure.lattice.abc],
+                "angles": [round(x, 1) for x in reduced_structure.lattice.angles],
+                "id": entry["id"],
             })
 
-        result = pd.DataFrame(rows)
-        result = result.reset_index(drop=True)
-        return result
+        df = pd.DataFrame(rows)
+        return df.reset_index(drop=True)
+
     
     def get_mc3d_structure_by_id(self, material_id):
         """
-        Get the MC3D structure by id
-        Args:
-            material_id: str
-        Returns:
-            pymatgen.core.structure.Structure: Structure of the MC3D structure
+        Fetch a single MC3D structure from OPTIMADE by ID.
         """
-        df = pd.read_json('./src/qe_input/mc3d_structures/mc3d_filtered_entries_pbe-v1_2025-01-16-01-09-20.json')
-        da=df.loc[df['id'] == material_id]
-        if da.empty:
+        base_url = f"https://optimade.materialscloud.org/main/mc3d-pbesol-v1/v1/structures/{material_id}"
+
+        response = requests.get(base_url)
+        response.raise_for_status()
+        entry = response.json().get("data")
+
+        if entry is None:
             return None
-        structure_file='./src/qe_input/mc3d_structures/mc3d-pbe-cifs/'+material_id[:-7]+'-pbe.cif'
-        structure = Structure.from_file(structure_file)
+
+        attr = entry["attributes"]
+
+        structure = Structure(
+            lattice=attr["lattice_vectors"],
+            species=attr["species_at_sites"],
+            coords=attr["cartesian_site_positions"],
+            coords_are_cartesian=True,
+        )
         return structure
+
     
     def get_oqmd_structure_table(self, formula):
         """
@@ -310,6 +351,8 @@ class StructureLookup:
                 index=None,
                 placeholder="leave as is",
             )
+            
+            primitive_structure=structure.get_primitive_structure()
 
             if unit_cell == "niggli reduced cell":
                 structure = structure.get_reduced_structure()
@@ -322,8 +365,9 @@ class StructureLookup:
                     structure.make_supercell(multi)
                     st.info("Supercell created.")
                 except Exception:
-                    st.warning("Invalid format for supercell.")
-            return structure
+                    st.info("Specify supercell.")
+            
+            return primitive_structure, structure
 
         elif len(selected) == 0:
             st.info("Please select a structure.")
