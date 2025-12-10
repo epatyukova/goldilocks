@@ -2,15 +2,10 @@ import os
 import sys
 import pytest
 import numpy as np
-
-# Skip if heavy deps are missing in CI
-pytest.importorskip("torch")
-pytest.importorskip("pymatgen")
-
 from pymatgen.core.structure import Structure
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src/qe_input")))
-from models.cgcnn_graph import (
+from models.cgcnn_graph import (  
     build_radius_cgcnn_graph_from_structure,
     build_crystalnn_cgcnn_graph_from_structure,
 )

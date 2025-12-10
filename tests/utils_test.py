@@ -8,7 +8,7 @@ import math
 from unittest.mock import MagicMock
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/qe_input')))
 
-from utils import (
+from utils import (  # noqa: E402
     list_of_pseudos,
     cutoff_limits,
     generate_input_file,

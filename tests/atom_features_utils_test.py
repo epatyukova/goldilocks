@@ -2,16 +2,12 @@ import sys
 import os
 import pytest
 import json
-import tempfile
-from pathlib import Path
 import numpy as np
-
-# Skip tests if dependencies are not available
-pymatgen = pytest.importorskip("pymatgen")
 from pymatgen.core.structure import Structure
+from pymatgen.core.composition import Composition
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/qe_input')))
-from models.atom_features_utils import (
+from models.atom_features_utils import (  
     load_atom_features,
     atom_features_from_structure,
     atomic_soap_features,
@@ -169,11 +165,6 @@ def test_atom_features_from_structure_inconsistent_dimensions(tmp_path):
 
 def test_atomic_soap_features(sample_structure):
     """Test SOAP feature generation"""
-    try:
-        dscribe = pytest.importorskip("dscribe")
-    except Exception:
-        pytest.skip("dscribe not available")
-    
     soap_params = {
         'r_cut': 5.0,
         'n_max': 4,
@@ -190,10 +181,6 @@ def test_atomic_soap_features(sample_structure):
 
 def test_atomic_soap_features_for_composition(sample_structure):
     """Test SOAP feature generation for composition"""
-    try:
-        dscribe = pytest.importorskip("dscribe")
-    except Exception:
-        pytest.skip("dscribe not available")
     
     soap_params = {
         'r_cut': 5.0,
@@ -203,10 +190,8 @@ def test_atomic_soap_features_for_composition(sample_structure):
     }
     
     soap_features = atomic_soap_features_for_composition(sample_structure, soap_params)
-    
     assert isinstance(soap_features, np.ndarray)
     # Should have one feature vector per unique element
-    from pymatgen.core.composition import Composition
     comp = Composition(sample_structure.formula)
     assert soap_features.shape[0] == len(comp)  # One per unique element
     assert soap_features.shape[1] > 0  # Should have some features
@@ -214,11 +199,6 @@ def test_atomic_soap_features_for_composition(sample_structure):
 
 def test_atom_features_from_structure_with_soap(sample_structure, mock_atom_features_file):
     """Test atom features with SOAP features enabled"""
-    # Skip if dscribe not available
-    try:
-        import dscribe
-    except ImportError:
-        pytest.skip("dscribe not available")
     
     atomic_features = {
         'atom_feature_strategy': {

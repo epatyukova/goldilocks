@@ -2,17 +2,15 @@ import os
 import sys
 import numpy as np
 import pytest
+from pymatgen.core.structure import Structure
+from pymatgen.core.composition import Composition
 
 # Skip the whole module if heavy deps are unavailable in CI
 matminer = pytest.importorskip("matminer")
 pytest.importorskip("dscribe")
-pytest.importorskip("pymatgen")
-
-from pymatgen.core.structure import Structure
-from pymatgen.core.composition import Composition
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src/qe_input")))
-import models.compound_features_utils as cf
+import models.compound_features_utils as cf  # noqa: E402
 
 
 @pytest.fixture

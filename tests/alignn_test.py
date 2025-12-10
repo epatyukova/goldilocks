@@ -2,14 +2,11 @@ import sys
 import os
 import pytest
 import torch
-import numpy as np
-
-# Skip tests if dependencies are not available
-torch = pytest.importorskip("torch")
 from torch_geometric.data import Data
 
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/qe_input')))
-from models.alignn import (
+from models.alignn import (  # noqa: E402
     EdgeGatedGraphConvPyG,
     ALIGNNConvPyG,
     RBFExpansion,

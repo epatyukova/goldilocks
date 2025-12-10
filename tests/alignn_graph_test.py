@@ -1,15 +1,11 @@
 import sys
 import os
 import pytest
-import numpy as np
-
-# Skip tests if dependencies are not available
-torch = pytest.importorskip("torch")
-pymatgen = pytest.importorskip("pymatgen")
 from pymatgen.core.structure import Structure
+import torch
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/qe_input')))
-from models.alignn_graph import build_alignn_graph_with_angles_from_structure
+from models.alignn_graph import build_alignn_graph_with_angles_from_structure  
 
 
 @pytest.fixture

@@ -10,7 +10,7 @@ pytest.importorskip("torch")
 from pymatgen.core.structure import Structure
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/qe_input')))
-import kspacing_model as km  # import module so we can monkeypatch its functions
+import kspacing_model as km  # noqa: E402  # import module so we can monkeypatch its functions
 
 @pytest.fixture
 def sample_structure():
