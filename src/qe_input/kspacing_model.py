@@ -19,12 +19,43 @@ data_type_torch = torch.float32
 
 def predict_kspacing(structure, model_name, confidence_level=0.95):
     """
-    Predict the kspacing for a structure using the CGCNN model
+    Predict the k-point spacing for a structure using machine learning models.
+    
+    This function predicts optimal k-point spacing (kdist) for Quantum Espresso
+    calculations using either Random Forest (RF) or ALIGNN models. The models
+    predict median k-point spacing along with confidence intervals.
+    
     Args:
-        structure: pymatgen.core.structure.Structure
-        config: dict
+        structure (pymatgen.core.structure.Structure): Crystal structure to predict
+            k-point spacing for.
+        model_name (str): Model to use for prediction. Must be either 'RF' 
+            (Random Forest) or 'ALIGNN' (Atomistic Line Graph Neural Network).
+        confidence_level (float, optional): Confidence level for prediction intervals.
+            Must be one of 0.95, 0.9, or 0.85. Defaults to 0.95.
+    
     Returns:
-        tuple: klength, klength_std
+        tuple: A tuple containing:
+            - kdist (float): Predicted k-point spacing (median prediction)
+            - kdist_upper (float): Upper bound of confidence interval
+            - kdist_lower (float): Lower bound of confidence interval
+    
+    Raises:
+        ValueError: If model_name is not 'RF' or 'ALIGNN'.
+        ValueError: If confidence_level is not one of the supported values.
+        FileNotFoundError: If required model files cannot be downloaded.
+    
+    Note:
+        Models are automatically downloaded from Hugging Face Hub on first use.
+        The function applies conformalized corrections to the confidence intervals
+        based on the selected confidence level.
+    
+    Example:
+        >>> from pymatgen.core.structure import Structure
+        >>> structure = Structure.from_file("structure.cif")
+        >>> kdist, kdist_upper, kdist_lower = predict_kspacing(
+        ...     structure, model_name='ALIGNN', confidence_level=0.95
+        ... )
+        >>> print(f"Predicted k-point spacing: {kdist:.4f}")
     """
     # corrections are calculated when the models were trained and calibrated
     if model_name=='ALIGNN':

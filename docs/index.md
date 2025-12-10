@@ -1,18 +1,33 @@
 # Welcome to Goldilocks
 
-Goldilocks helps you generate Quantum Espresso SCF input files.
+Goldilocks helps you generate Quantum Espresso SCF input files with optimal parameters predicted by machine learning models.
 
 Use the menu to navigate the documentation.
 
 ## Introduction
 
-This simple application aims to generate input files for Quantum Espresso single point energy calculations.
+This application generates input files for Quantum Espresso single point energy calculations with automatically optimized parameters.
 
-Performing simple SCF energy calculation requires a correct choice of parameters: functional, pseudo-potentials, plane wave cutoff values for energy and density, k-mesh, suitable smearing method, and corresponding degauss value. Magnetic compounds require an appropriate spin configuration to be specified along with starting magnetizations for each atomic species, and possibly the use of starting_magnetization or constrained magnetization settings to ensure convergence to the correct magnetic state.
+### What Goldilocks Does
 
-The parameters ususally can be chosen in a non-unique way. Choosing the set of parameters providing a given calculation accuracy usually requiers additional calculations to check convergence. Here we aim at predicting good sets of parameters. This may help to avoid running convergence studies or provide a good starting point for such calculations.
+Performing a simple SCF energy calculation requires choosing several parameters:
+- **Functional**: Exchange-correlation functional (PBE or PBEsol)
+- **Pseudopotentials**: From the SSSP library, with efficiency or precision modes
+- **Cutoffs**: Plane wave cutoff values for energy and density
+- **K-mesh**: K-point sampling grid
+- **Smearing**: Smearing method and corresponding degauss value
+- **Magnetic configuration**: For magnetic compounds, appropriate spin configuration and starting magnetizations
 
-Scientific details, and model evaluations can be found in [Related research](related-research.md) section.
+These parameters can usually be chosen in multiple ways. Choosing a set that provides a given calculation accuracy typically requires additional calculations to check convergence. Goldilocks predicts good parameter sets using machine learning models, helping you avoid running convergence studies or providing a good starting point for such calculations.
+
+### Key Features
+
+- **ML-based k-point prediction**: Uses Random Forest or ALIGNN models to predict optimal k-point spacing with confidence intervals
+- **Automatic parameter selection**: Chooses pseudopotentials and cutoffs based on SSSP recommendations
+- **Multiple generation methods**: Deterministic (ASE-based) or LLM-assisted generation
+- **Database integration**: Search for structures in free materials databases (JARVIS, Materials Project, MC3D, OQMD)
+
+Scientific details and model evaluations can be found in the [Related research](related-research.md) section.
 
 ## Contributors
 

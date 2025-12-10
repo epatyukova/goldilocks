@@ -15,15 +15,18 @@ theme:
     - toc.integrate
 nav:
   - Home: index.md
-  - UI Guide: 
-      - Introduction: installation.md
+  - Installation: installation.md
+  - User Guide: 
       - Data input page: intro.md
       - Deterministic generation: deterministic.md
       - LLM generation: chat_llm.md
+  - Models: 
+      - K-point prediction models: kpoints.md
+  - Development:
+      - For developers: for-developers.md
   - Related research: 
       - Choosing parameters for SCF DFT calculation: related-research.md
       - Data generation approach: data-generation-approach.md
-      - Models for k-mesh prediction: kpoints.md
   - License: license.md
 
 

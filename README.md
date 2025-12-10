@@ -21,7 +21,7 @@ Further documentation can be found [here](https://stfc.github.io/goldilocks/)
 ## Running the application
 
 ### Web application
-At the moment the applicaiton is deployed on Streamlit community cloud and can be tried out here https://goldilocks.streamlit.app/. In the nearest future it will be transfered to https://goldilocks.ac.uk/.
+At the moment the application is deployed on Streamlit community cloud and can be tried out here: https://goldilocks.streamlit.app/. In the near future it will be transferred to https://goldilocks.ac.uk/.
 
 ### Running locally
 The application can be run locally whether in a Docker container, or in a python environment.
@@ -73,20 +73,27 @@ http://localhost:8501
 
 ## Features
 
-The purpose if this application is to help unexperienced user to setup a single point SCF energy calculation with 
+The purpose of this application is to help inexperienced users set up a single point SCF energy calculation with 
 Quantum Espresso package [1,2].
 
-Current strategy of choice of parameters for single point SCF calulations is the following:
+### Current Strategy for Parameter Selection
 
-* Use SSSP library of pseudo-potentials [3] (there are versions for PBE, PBEsol funcitonals and 'efficiency' and 'precision' calculations, all of which are availible through the application)
-* For cutoffs choose the maximum value for all elements in the compound from tables supplied with corresponding set of pseudopotentials
-* We use constant smearing for all calculations 0.01 Ry Marzari-Vanderbilt
-* We predict k-point mesh with machine learning model (at the moment it is CGCNN) which was trained on data generated for the set of strutures from MC3D database [8] (additional relaxation was not perfomed). We also predict confidece interval for k-points prediction (95% confidence). 
-            
+The current strategy for choosing parameters for single point SCF calculations is the following:
+
+* **Pseudopotentials**: Use SSSP library of pseudopotentials [3] (versions for PBE and PBEsol functionals, with 'efficiency' and 'precision' modes, all available through the application)
+* **Cutoffs**: Choose the maximum value for all elements in the compound from tables supplied with the corresponding set of pseudopotentials
+* **Smearing**: Constant smearing for all calculations: 0.01 Ry Marzari-Vanderbilt
+* **K-point mesh**: Predicted using machine learning models (Random Forest or ALIGNN) trained on data generated for structures from the MC3D database [8]. The models predict k-point spacing with confidence intervals (95%, 90%, or 85% confidence levels available)
+
+### Input File Generation Methods
+
 The input file can be generated via:
-* ASE deterministic function [4] (after generation .zip archive is created with the structure file, PP files, and input file which can be used as QE input)
-* With a set of LLMs (the choice is availible, the user should provide appropriate API key, which can be obtained through links shown in the app. Some LLMs require payment).
-* LLMs can also answer questions about the content of the input file, introduce corrections in the generated file, and answer general questions about DFT simulations with QE.
+
+* **Deterministic generator**: Uses ASE deterministic function [4] to generate input files. After generation, a `.zip` archive is created containing the structure file, pseudopotential files, and input file ready for QE
+* **LLM-based generator**: Uses Large Language Models (OpenAI GPT models or Groq Llama models) to generate input files. Users must provide appropriate API keys (obtainable through links shown in the app). Some LLMs require payment. The LLMs can also:
+  - Answer questions about the content of the input file
+  - Introduce corrections in the generated file
+  - Answer general questions about DFT simulations with QE
 
 ## Related research
 

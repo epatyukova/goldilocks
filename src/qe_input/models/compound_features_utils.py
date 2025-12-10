@@ -3,6 +3,7 @@ import pandas as pd
 from typing import List
 import matminer
 from matminer.featurizers import composition as composition_featurizers
+from matminer.featurizers import structure as structure_featurizers
 from matminer.featurizers.base import MultipleFeaturizer
 from dscribe.descriptors import SOAP
 from pymatgen.io.ase import AseAtomsAdaptor
@@ -107,10 +108,10 @@ def matminer_structure_features(df: pd.DataFrame,
     for feat in list_of_features:
         if(feat=='GlobalSymmetryFeatures'):
             props=["spacegroup_num", "crystal_system_int", "is_centrosymmetric"]
-            method = getattr(matminer.featurizers.structure, feat)(props)
+            method = getattr(structure_featurizers, feat)(props)
         elif(feat=='DensityFeatures'):
             props=["density", "vpa", "packing fraction"]
-            method = getattr(matminer.featurizers.structure, feat)(props)
+            method = getattr(structure_featurizers, feat)(props)
         list_of_feat_meth.append(method)
     
     structure_featurizer = MultipleFeaturizer(list_of_feat_meth)

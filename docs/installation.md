@@ -1,8 +1,8 @@
-Here you can find information about using the Goldilocks app.
+Here you can find information about installing and running the Goldilocks app.
 
-# Web application
+## Web Application
 
-At the moment the applicaiton is deployed on Streamlit community cloud and can be tried out here https://goldilocks.streamlit.app/. In the nearest future it will be transfered to https://goldilocks.ac.uk/.
+The application is currently deployed on Streamlit community cloud and can be accessed here: https://goldilocks.streamlit.app/. In the near future it will be transferred to https://goldilocks.ac.uk/.
 
 # Running locally
 
