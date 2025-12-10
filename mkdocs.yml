@@ -20,12 +20,10 @@ nav:
       - Data input page: intro.md
       - Deterministic generation: deterministic.md
       - LLM generation: chat_llm.md
-  - Models: 
-      - K-point prediction models: kpoints.md
   - Development:
       - For developers: for-developers.md
   - Data:
-      - Data generation approach: data-generation-approach.md
+      - Data availiability: data-availiability.md
   - License: license.md
 
 

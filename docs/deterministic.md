@@ -12,7 +12,7 @@ The page for generating input using the deterministic function is shown below.
 2. Click the "Generate Input" button
 3. Review the generated parameters displayed on the page
 4. Download the `.zip` archive containing:
-   - `pwscf.in`: The Quantum Espresso input file
+   - `qe.in`: The Quantum Espresso input file
    - `structure.cif`: The structure file used
    - Pseudopotential files (`.UPF` or `.upf`): All required pseudopotential files for the compound
 
