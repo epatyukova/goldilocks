@@ -3,6 +3,7 @@ import pandas as pd
 from typing import List
 import matminer
 from matminer.featurizers import composition as composition_featurizers
+from matminer.featurizers import structure as structure_featurizers
 from matminer.featurizers.base import MultipleFeaturizer
 from dscribe.descriptors import SOAP
 from pymatgen.io.ase import AseAtomsAdaptor
@@ -17,11 +18,19 @@ sys.path.append(str(project_root))
 
 
 def normalize_formulas(df: pd.DataFrame, formula_column: str = 'formula') -> pd.DataFrame:
-    """Normalize chemical formulas to IUPAC format, removing duplicates due to structural representations.
-
+    """Normalize chemical formulas to IUPAC format.
+    
+    Converts chemical formulas to IUPAC standard format, removing duplicates
+    that arise from different structural representations of the same compound.
+    
     Args:
-        df (pd.DataFrame): DataFrame containing at least a 'formula' column.
-        formula_column"""
+        df (pd.DataFrame): DataFrame containing at least a formula column.
+        formula_column (str, optional): Name of the column containing formulas.
+            Defaults to 'formula'.
+    
+    Returns:
+        pd.DataFrame: DataFrame with normalized formulas in the specified column.
+    """
     formula=[]
     for form in df[formula_column].values:
         formula.append(Composition(Composition(form).get_integer_formula_and_factor()[0]).iupac_formula)
@@ -31,7 +40,21 @@ def normalize_formulas(df: pd.DataFrame, formula_column: str = 'formula') -> pd.
 def matminer_composition_features(df: pd.DataFrame, 
                                   list_of_features: List, 
                                   formula_column = 'formula'):
-    """Function to calculate composition features
+    """Calculate composition-based features using matminer featurizers.
+    
+    Computes various composition descriptors (e.g., elemental properties,
+    stoichiometric features) for each compound in the dataframe.
+    
+    Args:
+        df (pd.DataFrame): DataFrame containing chemical formulas.
+        list_of_features (List[str]): List of matminer featurizer names to use.
+            Examples: ['ElementProperty', 'Stoichiometry', 'ValenceOrbital'].
+        formula_column (str, optional): Name of the column containing formulas.
+            Defaults to 'formula'.
+    
+    Returns:
+        numpy.ndarray: Feature matrix of shape [num_compounds, feature_dim].
+            NaN values are replaced with 0.0.
     """
     df = normalize_formulas(df, formula_column)
     df['composition'] = [Composition(form) for form in df[formula_column]]
@@ -62,20 +85,33 @@ def matminer_composition_features(df: pd.DataFrame,
 def matminer_structure_features(df: pd.DataFrame,
                                 list_of_features: List,
                                 structure_column = 'structure'):
-    """Function to calculate structure features
-       Input:
-       df: dataframe with compounds' information 
-       list_of_features: list of matminer structure feature methods
-       structure_column: column in the dataframe which contains pymatgen structures for compounds.
+    """Calculate structure-based features using matminer featurizers.
+    
+    Computes various structural descriptors (e.g., symmetry features, density)
+    for each crystal structure in the dataframe.
+    
+    Args:
+        df (pd.DataFrame): DataFrame containing pymatgen Structure objects.
+        list_of_features (List[str]): List of matminer structure featurizer names.
+            Examples: ['GlobalSymmetryFeatures', 'DensityFeatures'].
+        structure_column (str, optional): Name of the column containing structures.
+            Defaults to 'structure'.
+    
+    Returns:
+        numpy.ndarray: Feature matrix of shape [num_compounds, feature_dim].
+            NaN values are replaced with 0.0. Failed featurizations result in zero vectors.
+    
+    Note:
+        Prints warnings for structures that fail featurization.
     """
     list_of_feat_meth=[]
     for feat in list_of_features:
         if(feat=='GlobalSymmetryFeatures'):
             props=["spacegroup_num", "crystal_system_int", "is_centrosymmetric"]
-            method = getattr(matminer.featurizers.structure, feat)(props)
+            method = getattr(structure_featurizers, feat)(props)
         elif(feat=='DensityFeatures'):
             props=["density", "vpa", "packing fraction"]
-            method = getattr(matminer.featurizers.structure, feat)(props)
+            method = getattr(structure_featurizers, feat)(props)
         list_of_feat_meth.append(method)
     
     structure_featurizer = MultipleFeaturizer(list_of_feat_meth)
@@ -93,10 +129,29 @@ def matminer_structure_features(df: pd.DataFrame,
 
 
 def lattice_features(df: pd.DataFrame, structure_column: str = 'structure'):
-    """Create lattice features:
-       lattice constants, lattice angles,
-       reciprocal lattice constants, reciprocal lattice angles,
-       space_group_number, crystal_system, bravais_lattice
+    """Calculate lattice-related features for crystal structures.
+    
+    Extracts geometric and symmetry information from crystal lattices:
+    - Lattice constants (a, b, c)
+    - Lattice angles (alpha, beta, gamma)
+    - Reciprocal lattice constants and angles
+    - Space group number
+    - Crystal system (encoded as integer)
+    - Bravais lattice type (encoded as integer)
+    
+    Args:
+        df (pd.DataFrame): DataFrame containing pymatgen Structure objects.
+        structure_column (str, optional): Name of the column containing structures.
+            Defaults to 'structure'.
+    
+    Returns:
+        numpy.ndarray: Feature matrix of shape [num_compounds, 15].
+            Features are: [a, b, c, alpha, beta, gamma, a*, b*, c*, alpha*, beta*, gamma*,
+            crystal_system_id, bravais_id, space_group_number].
+            NaN values are replaced with 0.0.
+    
+    Note:
+        Prints warnings for structures that fail feature calculation.
     """
     # 7 crystal systems
     crystal_system_map = {
@@ -160,7 +215,25 @@ def lattice_features(df: pd.DataFrame, structure_column: str = 'structure'):
 def soap_features(df: pd.DataFrame,
                   soap_params = {'r_cut': 10.0, 'n_max': 8, 'l_max': 6, 'sigma': 1.0},
                   structure_column = 'structure'):
-    """Function to calculate SOAP compound features, all atoms are assumed to be the same
+    """Calculate SOAP (Smooth Overlap of Atomic Positions) features for compounds.
+    
+    Computes SOAP descriptors averaged over all atoms in each structure.
+    All atoms are treated as the same element 'X' for SOAP calculation.
+    
+    Args:
+        df (pd.DataFrame): DataFrame containing pymatgen Structure objects.
+        soap_params (dict, optional): Dictionary containing SOAP parameters:
+            - r_cut (float): Cutoff radius for SOAP. Defaults to 10.0.
+            - n_max (int): Maximum radial basis functions. Defaults to 8.
+            - l_max (int): Maximum angular momentum. Defaults to 6.
+            - sigma (float): Gaussian width parameter. Defaults to 1.0.
+        structure_column (str, optional): Name of the column containing structures.
+            Defaults to 'structure'.
+    
+    Returns:
+        numpy.ndarray: Feature matrix of shape [num_compounds, soap_feature_dim].
+            Each row is the mean SOAP feature vector over all atoms in the structure.
+            NaN values are replaced with 0.0.
     """
     soap_featurizer = SOAP(species=['X'],  # or whatever elements you're using
                                r_cut=soap_params['r_cut'],

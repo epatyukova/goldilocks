@@ -10,7 +10,29 @@ def build_radius_cgcnn_graph_from_structure(structure: Structure,
                                          atom_features: List, 
                                          radius: float=10.0, 
                                          max_neighbors: int=12) -> Data:
-    """Converts a pymatgen Structure to a PyTorch Geometric Data object with atomic features and edge distances."""
+    """Convert a pymatgen Structure to a PyTorch Geometric Data object using radius-based neighbor search.
+    
+    Constructs a graph where nodes are atoms and edges connect atoms within
+    a specified radius. Edge attributes store the interatomic distances.
+    
+    Args:
+        structure (pymatgen.core.structure.Structure): Crystal structure to convert.
+        atom_features (List): List of atomic feature vectors, one per atom.
+            Each element should be a list or array of features.
+        radius (float, optional): Cutoff radius for neighbor search in Angstroms.
+            Defaults to 10.0.
+        max_neighbors (int, optional): Maximum number of neighbors per atom.
+            Defaults to 12.
+    
+    Returns:
+        torch_geometric.data.Data: Graph data object with:
+            - x: Node features of shape [num_atoms, feature_dim]
+            - edge_index: Edge connectivity of shape [2, num_edges]
+            - edge_attr: Edge distances of shape [num_edges, 1]
+    
+    Warns:
+        UserWarning: If some atoms have no neighbors within the radius.
+    """
     
     x = torch.tensor(atom_features, dtype=torch.float32) 
     # Edge features: collect neighbors
@@ -51,6 +73,28 @@ def build_radius_cgcnn_graph_from_structure(structure: Structure,
 def build_crystalnn_cgcnn_graph_from_structure(structure: Structure, 
                                          atom_features: List, 
                                          radius: float=10.0) -> Data:
+    """Convert a pymatgen Structure to a PyTorch Geometric Data object using CrystalNN neighbor search.
+    
+    Constructs a graph where nodes are atoms and edges connect atoms identified
+    by the CrystalNN algorithm, which uses coordination environments rather than
+    simple distance cutoffs. Edge attributes store the interatomic distances.
+    
+    Args:
+        structure (pymatgen.core.structure.Structure): Crystal structure to convert.
+        atom_features (List): List of atomic feature vectors, one per atom.
+            Each element should be a list or array of features.
+        radius (float, optional): Maximum search radius for CrystalNN in Angstroms.
+            Defaults to 10.0.
+    
+    Returns:
+        torch_geometric.data.Data: Graph data object with:
+            - x: Node features of shape [num_atoms, feature_dim]
+            - edge_index: Edge connectivity of shape [2, num_edges]
+            - edge_attr: Edge distances of shape [num_edges, 1]
+    
+    Warns:
+        UserWarning: If some atoms have no neighbors found by CrystalNN.
+    """
     x = torch.tensor(atom_features, dtype=torch.float32) 
     # Edge features: collect neighbors
     edge_index = []

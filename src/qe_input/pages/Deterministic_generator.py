@@ -30,18 +30,42 @@ if st.session_state['all_info']:
         else:
             st.write('Error: Input file was not generated!')
         shutil.make_archive('./src/qe_input/qe_input', 'zip','./src/qe_input/temp')
+        
+        st.markdown(f"""
+                    ### Input File Parameters
+                    - Compound: {st.session_state['composition']}
+                    - Pseudo family: {st.session_state['pseudo_family']}
+                    - Energy cutoff (Ry): {st.session_state['cutoffs']['max_ecutwfc']}
+                    - Density cutoff (Ry): {st.session_state['cutoffs']['max_ecutrho']}
+                    - K-points grid (with offset): `{generate_kpoints_grid(st.session_state['structure'], st.session_state['kdist_lower'], offset=True)}`
+                    ---
+                    """
+        )
 
-        st.write('compound: ', st.session_state['composition'])
-        st.write('Pseudo family used: ', st.session_state['pseudo_family'])
-        st.write('energy cutoff (Ry): ', st.session_state['cutoffs']['max_ecutwfc'])
-        st.write('density cutoff (Ry): ', st.session_state['cutoffs']['max_ecutrho'])
-        st.write('k points and offset: ', str(generate_kpoints_grid(st.session_state['structure'], st.session_state['kdist_lower'], offset=True)))
-        st.write(' ')
-        st.write(' ')
-        st.write('confidence level: ',str(st.session_state['confidence_level']))
-        st.write('k-distance median: ', str(round(st.session_state['kdist'],4)))
-        st.write('k-distance lower bound: ', str(round(st.session_state['kdist_lower'],4)))
-        st.write('k-distance upper bound: ', str(round(st.session_state['kdist_upper'],4)))
+        st.markdown(f"""
+                    ### K-points Prediction Details
+                    - Confidence level: {st.session_state['confidence_level']}
+                    - K-distance median: {st.session_state['kdist']:.4f}
+                    - K-distance lower bound: {st.session_state['kdist_lower']:.4f}
+                    - K-distance upper bound: {st.session_state['kdist_upper']:.4f}
+
+                    ---
+                        """
+                    )
+
+
+
+        # st.write('compound: ', st.session_state['composition'])
+        # st.write('Pseudo family used: ', st.session_state['pseudo_family'])
+        # st.write('energy cutoff (Ry): ', st.session_state['cutoffs']['max_ecutwfc'])
+        # st.write('density cutoff (Ry): ', st.session_state['cutoffs']['max_ecutrho'])
+        # st.write('k points and offset: ', str(generate_kpoints_grid(st.session_state['structure'], st.session_state['kdist_lower'], offset=True)))
+        # st.write(' ')
+        # st.write(' ')
+        # st.write('confidence level: ',str(st.session_state['confidence_level']))
+        # st.write('k-distance median: ', str(round(st.session_state['kdist'],4)))
+        # st.write('k-distance lower bound: ', str(round(st.session_state['kdist_lower'],4)))
+        # st.write('k-distance upper bound: ', str(round(st.session_state['kdist_upper'],4)))
 
         st.download_button(
                 label="Download the files",

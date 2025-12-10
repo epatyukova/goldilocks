@@ -1,3 +1,7 @@
+The data used to train the models is availible at [PSDI](https://data-collections.psdi.ac.uk/records/75959-bwa52)
+
+### Data generation approach
+
 With all interconnected factors affecting k-points convergence for single point energy calculations in mind, the following set of parameters was chosen to generate the data:
 
 1.  The valence electrons are represented using the Standard Solid-State Pseudopotential (SSSP) library (version 1.3, PBEsol, efficiency set), with plane-wave cutoff energies determined following the efficiency-level recommendations.

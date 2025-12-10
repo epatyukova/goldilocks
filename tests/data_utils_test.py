@@ -8,7 +8,7 @@ import json
 import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src/qe_input')))
-from data_utils import StructureLookup
+from data_utils import StructureLookup 
 
 # from data_utils import jarvis_structure_lookup, mp_structure_lookup, mc3d_structure_lookup,oqmd_strucutre_lookup
 

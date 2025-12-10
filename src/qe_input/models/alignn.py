@@ -6,7 +6,20 @@ from torch_geometric.data import Data
 
 
 class EdgeGatedGraphConvPyG(MessagePassing):
-    """Edge-gated graph convolution layer with corrected message normalization."""
+    """Edge-gated graph convolution layer with corrected message normalization.
+    
+    This layer implements an edge-gated message passing mechanism where messages
+    are gated by a combination of source node, destination node, and edge features.
+    The gating mechanism uses a SiLU activation function, and the layer supports
+    residual connections and normalization (LayerNorm or BatchNorm).
+    
+    Args:
+        in_channels (int): Number of input node features.
+        out_channels (int): Number of output node features.
+        residual (bool, optional): Whether to use residual connections. Defaults to True.
+        use_layer_norm (bool, optional): If True, use LayerNorm; otherwise use BatchNorm1d.
+            Defaults to True.
+    """
     
     def __init__(self, in_channels, out_channels, residual=True, use_layer_norm=True):
         super().__init__(aggr='add')
@@ -26,9 +39,29 @@ class EdgeGatedGraphConvPyG(MessagePassing):
             self.norm = nn.BatchNorm1d(out_channels)
 
     def forward(self, x, edge_index, edge_attr):
+        """Forward pass through the edge-gated graph convolution layer.
+        
+        Args:
+            x (torch.Tensor): Node feature matrix of shape [num_nodes, in_channels].
+            edge_index (torch.Tensor): Graph connectivity in COO format with shape [2, num_edges].
+            edge_attr (torch.Tensor): Edge feature matrix of shape [num_edges, in_channels].
+        
+        Returns:
+            torch.Tensor: Updated node features of shape [num_nodes, out_channels].
+        """
         return self.propagate(edge_index, x=x, edge_attr=edge_attr)
 
     def message(self, x_i, x_j, edge_attr):
+        """Compute gated messages from source nodes to destination nodes.
+        
+        Args:
+            x_i (torch.Tensor): Source node features of shape [num_edges, in_channels].
+            x_j (torch.Tensor): Destination node features of shape [num_edges, in_channels].
+            edge_attr (torch.Tensor): Edge features of shape [num_edges, in_channels].
+        
+        Returns:
+            torch.Tensor: Gated messages of shape [num_edges, out_channels].
+        """
         # Compute gate: element-wise combination of source, dest, and edge features
         gate = self.src_gate(x_i) + self.dst_gate(x_j) + self.edge_gate(edge_attr)
         gate = F.silu(gate)
@@ -38,6 +71,15 @@ class EdgeGatedGraphConvPyG(MessagePassing):
         return msg
   
     def update(self, aggr_out, x):
+        """Update node features with aggregated messages.
+        
+        Args:
+            aggr_out (torch.Tensor): Aggregated messages of shape [num_nodes, out_channels].
+            x (torch.Tensor): Original node features of shape [num_nodes, in_channels].
+        
+        Returns:
+            torch.Tensor: Updated node features of shape [num_nodes, out_channels].
+        """
         # Update: source node feature + aggregated messages
         out = self.src_update(x) + aggr_out
         
@@ -53,7 +95,18 @@ class EdgeGatedGraphConvPyG(MessagePassing):
 
 
 class ALIGNNConvPyG(nn.Module):
-    """One ALIGNN layer: edge updates on line graph, then node updates on bond graph."""
+    """One ALIGNN layer: edge updates on line graph, then node updates on bond graph.
+    
+    ALIGNN (Atomistic Line Graph Neural Network) layers update edge features
+    using a line graph representation (where edges become nodes), then update
+    node features using the updated edge features. This allows the model to
+    capture both bond and angle information.
+    
+    Args:
+        hidden_dim (int): Hidden feature dimension for nodes and edges.
+        use_layer_norm (bool, optional): If True, use LayerNorm in sub-layers;
+            otherwise use BatchNorm1d. Defaults to True.
+    """
     
     def __init__(self, hidden_dim, use_layer_norm=True):
         super().__init__()
@@ -61,6 +114,20 @@ class ALIGNNConvPyG(nn.Module):
         self.edge_update = EdgeGatedGraphConvPyG(hidden_dim, hidden_dim, use_layer_norm=use_layer_norm)
 
     def forward(self, data_g, data_lg):
+        """Forward pass through the ALIGNN layer.
+        
+        Args:
+            data_g (torch_geometric.data.Data): Atomic graph with node features (x),
+                edge indices (edge_index), and edge attributes (edge_attr).
+            data_lg (torch_geometric.data.Data): Line graph where nodes correspond
+                to edges in the atomic graph. Should have node features (x),
+                edge indices (edge_index), and edge attributes (edge_attr) representing angles.
+        
+        Returns:
+            tuple: A tuple containing:
+                - x (torch.Tensor): Updated node features of shape [num_nodes, hidden_dim].
+                - edge_attr (torch.Tensor): Updated edge features of shape [num_edges, hidden_dim].
+        """
         # Update edges using line graph
         edge_attr = self.edge_update(data_lg.x, data_lg.edge_index, data_lg.edge_attr)
         
@@ -71,7 +138,19 @@ class ALIGNNConvPyG(nn.Module):
 
 
 class RBFExpansion(nn.Module):
-    """Radial basis function expansion."""
+    """Radial basis function expansion for continuous features.
+    
+    Expands scalar features (e.g., distances, angles) into a vector representation
+    using Gaussian radial basis functions. This is useful for encoding continuous
+    geometric information like bond distances or angles.
+    
+    Args:
+        vmin (float, optional): Minimum value for the RBF centers. Defaults to 0.
+        vmax (float, optional): Maximum value for the RBF centers. Defaults to 8.
+        bins (int, optional): Number of RBF centers. Defaults to 40.
+        lengthscale (float, optional): Length scale for the Gaussian kernels.
+            If None, computed as the spacing between centers. Defaults to None.
+    """
     
     def __init__(self, vmin=0, vmax=8, bins=40, lengthscale=None):
         super().__init__()
@@ -82,12 +161,29 @@ class RBFExpansion(nn.Module):
         self.gamma = 1.0 / (lengthscale ** 2)
 
     def forward(self, distance):
+        """Expand scalar distances into RBF features.
+        
+        Args:
+            distance (torch.Tensor): Scalar distance values of shape [num_edges]
+                or [num_edges, 1].
+        
+        Returns:
+            torch.Tensor: RBF-expanded features of shape [num_edges, bins].
+        """
         # RBF: exp(-gamma * (distance - center)^2)
         return torch.exp(-self.gamma * (distance.unsqueeze(1) - self.centers) ** 2)
 
 
 class Standardize(nn.Module):
-    """Standardize node features."""
+    """Standardize node features by subtracting mean and dividing by standard deviation.
+    
+    This module applies z-score normalization to node features, which is useful
+    for preprocessing input features to have zero mean and unit variance.
+    
+    Args:
+        mean (torch.Tensor): Mean values for each feature dimension.
+        std (torch.Tensor): Standard deviation values for each feature dimension.
+    """
     
     def __init__(self, mean: torch.Tensor, std: torch.Tensor):
         super().__init__()
@@ -95,13 +191,51 @@ class Standardize(nn.Module):
         self.register_buffer("std", std)
 
     def forward(self, data: Data) -> Data:
+        """Apply standardization to node features.
+        
+        Args:
+            data (torch_geometric.data.Data): Graph data object with node features (x).
+        
+        Returns:
+            torch_geometric.data.Data: New data object with standardized node features.
+        """
         data = data.clone()
         data.x = (data.x - self.mean) / (self.std + 1e-8)
         return data
 
 
 class ALIGNN_PyG(nn.Module):
-    """ALIGNN model for materials property prediction."""
+    """ALIGNN (Atomistic Line Graph Neural Network) model for materials property prediction.
+    
+    This model uses both atomic graphs and line graphs to capture bond and angle
+    information in crystal structures. It supports regression, classification,
+    robust regression, and quantile regression tasks.
+    
+    Args:
+        atom_input_features (int): Number of input atomic features.
+        hidden_features (int, optional): Hidden feature dimension. Defaults to 64.
+        radius (float, optional): Cutoff radius for neighbor search. Defaults to 10.0.
+        edge_input_features (int, optional): Number of RBF bins for edge features.
+            Defaults to 40.
+        triplet_input_features (int, optional): Number of RBF bins for angle features.
+            Defaults to 20.
+        alignn_layers (int, optional): Number of ALIGNN layers. Defaults to 4.
+        gcn_layers (int, optional): Number of final GCN layers. Defaults to 4.
+        classification (bool, optional): If True, use classification output.
+            Defaults to False.
+        num_classes (int, optional): Number of classes for classification. Defaults to 2.
+        robust_regression (bool, optional): If True, output mean and std for robust
+            regression. Defaults to False.
+        quantile_regression (bool, optional): If True, output quantiles. Defaults to False.
+        num_quantiles (int, optional): Number of quantiles to predict. Defaults to 1.
+        name (str, optional): Model name identifier. Defaults to 'alignn'.
+        use_layer_norm (bool, optional): If True, use LayerNorm; otherwise BatchNorm1d.
+            Defaults to True.
+        additional_compound_features (bool, optional): If True, include additional
+            compound-level features. Defaults to False.
+        add_feat_len (int, optional): Length of additional compound features.
+            Defaults to 231.
+    """
 
     def __init__(self, 
                  atom_input_features,
@@ -189,6 +323,26 @@ class ALIGNN_PyG(nn.Module):
             self.output_layer = nn.Linear(hidden_features, 1)
 
     def forward(self, data_g, data_lg):
+        """Forward pass through the ALIGNN model.
+        
+        Args:
+            data_g (torch_geometric.data.Data): Atomic graph with:
+                - x: Node features of shape [num_nodes, atom_input_features]
+                - edge_index: Edge connectivity of shape [2, num_edges]
+                - edge_attr: Edge distances of shape [num_edges] (scalar)
+                - batch: Batch assignment of shape [num_nodes] (optional)
+                - additional_compound_features: Additional features of shape [batch_size, add_feat_len]
+                  (optional, only if additional_compound_features=True)
+            data_lg (torch_geometric.data.Data): Line graph with:
+                - x: Edge features from atomic graph (will be set internally)
+                - edge_index: Line graph connectivity of shape [2, num_line_edges]
+                - edge_attr: Angle cosines of shape [num_line_edges] (scalar)
+        
+        Returns:
+            torch.Tensor: Model predictions of shape [batch_size] for regression,
+                or [batch_size, num_classes] for classification, or [batch_size, num_quantiles]
+                for quantile regression.
+        """
         # Embed features
         x = self.atom_embedding(data_g.x)
         
