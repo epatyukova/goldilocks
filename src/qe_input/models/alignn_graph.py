@@ -10,11 +10,36 @@ def build_alignn_graph_with_angles_from_structure(structure: Structure,
                                                   atom_features: List,
                                                   radius: float = 10.0,
                                                   max_neighbors: int = 12):
-    """
-    Generate ALIGNN-style atomic graph and line graph with angle (cosine) features.
+    """Generate ALIGNN-style atomic graph and line graph with angle (cosine) features.
+    
+    Constructs two graphs:
+    1. Atomic graph: nodes are atoms, edges are bonds (within radius)
+    2. Line graph: nodes are bonds, edges represent angles between bonds
+    
+    Args:
+        structure (pymatgen.core.structure.Structure): Crystal structure to convert.
+        atom_features (List): List of atomic feature vectors, one per atom.
+            Each element should be a list or array of features.
+        radius (float, optional): Cutoff radius for neighbor search in Angstroms.
+            Defaults to 10.0.
+        max_neighbors (int, optional): Maximum number of neighbors per atom.
+            Defaults to 12.
+    
     Returns:
-        g: atomic PyG graph with node & edge features
-        lg: line graph with angle cosines as edge features
+        tuple: A tuple containing:
+            - g (torch_geometric.data.Data): Atomic graph with:
+                - x: Node features of shape [num_atoms, feature_dim]
+                - edge_index: Edge connectivity of shape [2, num_edges]
+                - edge_attr: Edge distances of shape [num_edges]
+                - edge_vecs: Edge vectors of shape [num_edges, 3] (custom attribute)
+            - lg (torch_geometric.data.Data): Line graph with:
+                - x: Edge features from atomic graph (distances) of shape [num_edges]
+                - edge_index: Line graph connectivity of shape [2, num_line_edges]
+                - edge_attr: Angle cosines of shape [num_line_edges]
+    
+    Warns:
+        UserWarning: If some atoms have no neighbors within the radius.
+        UserWarning: If the line graph is empty (no angles found).
     """
     edge_index = []
     edge_attr = []

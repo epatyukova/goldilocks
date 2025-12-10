@@ -6,15 +6,42 @@ import json
 
 
 def load_atom_features(atom_init_path: str) -> Dict:
-    """Load atomic embedding file (traditionally keys are atomic numbers)"""
+    """Load atomic embedding file containing pre-computed atomic features.
+    
+    The file should be a JSON dictionary where keys are atomic numbers (as strings)
+    and values are feature vectors (lists of floats).
+    
+    Args:
+        atom_init_path (str): Path to the JSON file containing atomic embeddings.
+    
+    Returns:
+        Dict: Dictionary mapping atomic numbers (as strings) to feature vectors.
+    
+    Raises:
+        FileNotFoundError: If the file does not exist.
+        json.JSONDecodeError: If the file is not valid JSON.
+    """
     with open(atom_init_path, 'r') as f:
         data = json.load(f)
     return data
 
 
 def atomic_soap_features(structure, soap_params):
-    """Produce SOAP features for a structure assuming that the structure is a single element
-       (so it is a lattice representation)
+    """Produce SOAP (Smooth Overlap of Atomic Positions) features for a structure.
+    
+    Assumes the structure represents a single-element system (lattice representation).
+    All atoms are treated as the same element 'X' for SOAP calculation.
+    
+    Args:
+        structure (pymatgen.core.structure.Structure): Crystal structure to featurize.
+        soap_params (dict): Dictionary containing SOAP parameters:
+            - r_cut (float): Cutoff radius for SOAP.
+            - n_max (int): Maximum radial basis functions.
+            - l_max (int): Maximum angular momentum.
+            - sigma (float): Gaussian width parameter.
+    
+    Returns:
+        numpy.ndarray: SOAP features of shape [num_atoms, feature_dim].
     """
     from dscribe.descriptors import SOAP
     from pymatgen.io.ase import AseAtomsAdaptor
@@ -32,8 +59,21 @@ def atomic_soap_features(structure, soap_params):
     return desc.create(atoms)
 
 def atomic_soap_features_for_composition(structure, soap_params):
-    """Produce SOAP features for a structure assuming that the structure is a single element
-       (so it is a lattice representation). Suitable for Crabnet.
+    """Produce SOAP features averaged by composition for Crabnet compatibility.
+    
+    Similar to atomic_soap_features, but averages SOAP features by element type
+    in the composition. This is suitable for use with Crabnet models.
+    
+    Args:
+        structure (pymatgen.core.structure.Structure): Crystal structure to featurize.
+        soap_params (dict): Dictionary containing SOAP parameters:
+            - r_cut (float): Cutoff radius for SOAP.
+            - n_max (int): Maximum radial basis functions.
+            - l_max (int): Maximum angular momentum.
+            - sigma (float): Gaussian width parameter.
+    
+    Returns:
+        numpy.ndarray: Averaged SOAP features of shape [num_unique_elements, feature_dim].
     """
     from dscribe.descriptors import SOAP
     from pymatgen.io.ase import AseAtomsAdaptor
@@ -60,7 +100,28 @@ def atomic_soap_features_for_composition(structure, soap_params):
     return np.array(vecs)
 
 def atom_features_from_structure(structure: Structure, atomic_features: Dict):
-    """Calculate an array of atomic features for structure
+    """Calculate atomic features for each atom in a structure.
+    
+    Loads atomic embeddings from a JSON file and optionally augments them with
+    SOAP features. Returns a list of feature vectors, one per atom.
+    
+    Args:
+        structure (pymatgen.core.structure.Structure): Crystal structure to featurize.
+        atomic_features (Dict): Dictionary containing feature configuration:
+            - atom_feature_strategy (dict): Configuration dict with:
+                - atom_feature_file (str): Path to atomic embedding JSON file.
+                - soap_atomic (bool): Whether to include SOAP features.
+            - soap_params (dict, optional): SOAP parameters if soap_atomic=True.
+                See atomic_soap_features for parameter details.
+    
+    Returns:
+        List: List of feature vectors, one per atom. Each element is a numpy array
+            or list of floats. All feature vectors have the same dimension.
+    
+    Raises:
+        ValueError: If atomic features are not found for an element in the structure.
+        ValueError: If feature dimensions are inconsistent across atoms.
+        FileNotFoundError: If the embedding file does not exist.
     """
     embedding_path = atomic_features['atom_feature_strategy']['atom_feature_file']
     atom_features_dict=load_atom_features(embedding_path)
