@@ -146,7 +146,7 @@ The Random Forest model provides fast k-point predictions.
 
 ### CGCNN Model
 
-The CGCNN (Crystal Graph Convolutional Neural Network) model is available but not currently used in production.
+CGCNN (Crystal Graph Convolutional Neural Network) model is used to predict metallicity featuers which are used as input for both ALIGNN and RF models. This CGCNN model was trained on Materials Project 'is_metal' dataset (version October 2025).
 
 ## Graph Construction
 

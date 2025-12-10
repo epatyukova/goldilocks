@@ -24,8 +24,7 @@ nav:
       - K-point prediction models: kpoints.md
   - Development:
       - For developers: for-developers.md
-  - Related research: 
-      - Choosing parameters for SCF DFT calculation: related-research.md
+  - Data:
       - Data generation approach: data-generation-approach.md
   - License: license.md
 
