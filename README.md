@@ -21,7 +21,7 @@ Further documentation can be found [here](https://stfc.github.io/goldilocks/)
 ## Running the application
 
 ### Web application
-At the moment the application is deployed on Streamlit community cloud and can be tried out here: https://goldilocks.streamlit.app/. In the near future it will be transferred to https://goldilocks.ac.uk/.
+At the moment the application is deployed on Streamlit community cloud and can be found here: https://goldilocks.streamlit.app/.
 
 ### Running locally
 The application can be run locally whether in a Docker container, or in a python environment.
@@ -58,7 +58,32 @@ source .venv/bin/activate
 git clone https://github.com/stfc/goldilocks.git
 cd goldilocks
 ```
-* Install dependencies
+* Install PyTorch, torch-scatter, torch-sparse, torch-cluster, torch-spline-conv first (required for torch-geometric) before running poetry install. Pytorch Geometric requires binary wheels for torch_scatter, torch_sparse, torch_cluster, torch_spline_conv. These cannot be installed by Poetry automatically, so they must be installed first.
+   * Install PyTorch
+      * CPU-only:
+      ```
+      pip install torch --index-url https://download.pytorch.org/whl/cpu
+      ```
+      * CUDA-enabled (example: cu124):
+      ```
+      pip install torch --index-url https://download.pytorch.org/whl/cu124
+      ```
+   * Install PyTorch Geometric dependencies
+      * CPU wheels:
+      ```
+      pip install torch_scatter torch_sparse torch_cluster torch_spline_conv \
+            -f https://data.pyg.org/whl/torch-2.7.0+cpu.html
+      ```
+      * CUDA wheels (example: cu124):
+      ```
+      pip install torch_scatter torch_sparse torch_cluster torch_spline_conv \
+         -f https://data.pyg.org/whl/torch-2.7.0+cu124.html
+      ```
+      * Install torch_geometric
+      ```
+      pip install torch_geometric
+      ```
+* Install remaining dependencies with Poetry
 ```
 poetry install
 ```
