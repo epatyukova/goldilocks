@@ -14,7 +14,6 @@ from models.atom_features_utils import (
     atomic_soap_features_for_composition
 )
 
-
 @pytest.fixture
 def sample_structure():
     """Create a sample structure for testing"""
