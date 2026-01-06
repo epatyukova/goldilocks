@@ -154,10 +154,10 @@ def generate_kpoints_grid(structure, kdist, offset = False):
     Compute the maximum distance between k-points (kdist) from a given mesh and reciprocal cell.
  
     Input:
-    kpointsmesh: List[int] of number of k-points along each reciprocal lattice vector
+    kdist: kpoints spacing in 1/Å
     structure: pymatgen structure
     Output:
-    estimated maximum k-point spacing (in Å⁻¹): float
+    calculated k-point grid: list of integers for kpoints grid
     """
     recip_lattice = structure.lattice.reciprocal_lattice
     g1, g2, g3 = recip_lattice.matrix
