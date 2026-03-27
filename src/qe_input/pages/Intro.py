@@ -21,7 +21,7 @@ def next_step():
             st.switch_page("pages/Deterministic_generator.py")
 
 # Intro page
-st.write("# Welcome to QE input generator! 👋")
+st.write("# Goldilocks: generation of input files for Quantum ESPRESSO with optimized k-meshes")
 st.markdown("This app will help you generate input files for Quantum Espresso calculations.")
 st.sidebar.success("Provide specifications and select a way to generate input")
 
